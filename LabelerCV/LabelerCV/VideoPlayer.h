@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <opencv.hpp>
 #include <opencv2\highgui.hpp>
+#include <stack>
 
 namespace Labeler
 {
@@ -15,7 +16,8 @@ namespace Labeler
 			const char* _TIMEBAR_NAME = "Timeline";
 			const char* _WIN_NAME;
 			std::string _path;
-			cv::Mat _foregroundImg;
+			std::stack<cv::Mat> _historyMat;
+			//cv::Mat _foregroundImg;
 			cv::Mat _frameBuffer;
 			cv::VideoCapture _capture;
 			double fps, frame_count, vidlength, show_interval;
@@ -36,7 +38,7 @@ namespace Labeler
 			void showImage();
 
 			cv::Mat getFrame() { return _frameBuffer; }
-			cv::Mat getForegroundImage() { return _foregroundImg; }
+			cv::Mat getForegroundImage() { return _historyMat.top(); }
 			void setPoint1(cv::Point point) { point1 = point; }
 			void setPoint2(cv::Point point) { point2 = point; }
 			cv::Point getPoint1() { return point1; }
@@ -46,6 +48,15 @@ namespace Labeler
 			const char* getWindowName() const { return _WIN_NAME; }
 			void setLabel(LabelType lbtype) { label = lbtype; }
 			LabelType getLabel() { return label; }
+			void pushMat(cv::Mat& mt) { _historyMat.push(mt); }
+			void getbackMat() 
+			{ 
+ 				if (_historyMat.size() > 1)
+				{
+					_historyMat.pop(); 
+					cv::imshow(_WIN_NAME, _historyMat.top());
+				}
+			}
 		private:
 			bool loadVideo(std::string VideoPath);
 	};

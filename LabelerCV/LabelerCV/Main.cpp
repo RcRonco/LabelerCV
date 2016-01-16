@@ -10,35 +10,21 @@ Labeler::VideoPlayer* video;
 MSG msg;
 HHOOK hKeyboard = 0;
 bool play_flag = true;
-
+const char * window_name = "POV - Dataset Slicer";
 int main()
 {
-	//cv::namedWindow("POV - Dataset Slicer", cv::WINDOW_KEEPRATIO);
-	video = new Labeler::VideoPlayer("I:\\RonCohen\\Desktop\\testvid.mp4", "POV - Dataset Slicer");
+	video = new Labeler::VideoPlayer("I:\\RonCohen\\Desktop\\testvid.mp4", window_name);
 	SetWindowsHookEx(WH_KEYBOARD_LL, LLKeyboardProc, 0, 0);
 
 	while (GetMessage(&msg,0,0,0))
 	{
-		/*if (GetAsyncKeyState(VK_SPACE) == -32767)
-		{
-			play_flag = !play_flag;
-			cv::waitKey();
-		}*/
-
 		// If video done restart it.
 		if (video->isVideoEnded())
 			video->changeTime();
 
 		for (int i = 0; play_flag && video->readImage() ; i++)
-		{
-			/*if (GetAsyncKeyState(VK_SPACE) == -32767)
-			{
-				play_flag = !play_flag;
-				cv::waitKey();
-			}*/
-
 			video->showImage();
-		}
+
 		cv::waitKey();
 	}
 }
@@ -66,13 +52,20 @@ LRESULT CALLBACK LLKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 		{
 			video->setLabel(Labeler::LabelType::Animal);
 		}
-		/*
-		*   ptrKbdll->vkCode        ||
-		*   TODO: Data saving here  ||
-		*						   \  /
-		*                           \/
-		*/
-		// TODO: dsasads
+		else if (ptrKbdll->vkCode == 'Z')
+		{
+			video->getbackMat();
+		}
+	/*	else if (ptrKbdll->vkCode == VK_ESCAPE)
+		{
+			if (!cv::getWindowProperty(window_name, CV_WND_PROP_FULLSCREEN))
+				cv::setWindowProperty(window_name, CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
+			else
+			{
+				cv::setWindowProperty(window_name, CV_WND_PROP_FULLSCREEN, 0);
+				cv::setWindowProperty(window_name, CV_WINDOW_KEEPRATIO, 1);
+			}
+		}*/
 	}
 
 	return (CallNextHookEx(hKeyboard, nCode, wParam, lParam));

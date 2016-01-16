@@ -12,6 +12,7 @@ Labeler::VideoPlayer::VideoPlayer(std::string videoPath, const char * winname) :
 		throw std::exception("Can't load the video");
 
 	cv::namedWindow(_WIN_NAME, cv::WINDOW_KEEPRATIO);
+	//cv::setWindowProperty(_WIN_NAME, CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
 	cv::createTrackbar(_TIMEBAR_NAME, _WIN_NAME, 0, vidlength, timeTrackbarHandler, reinterpret_cast<void*>(&_capture));
 	cv::setMouseCallback(_WIN_NAME, mouseHandler, this);
 }
@@ -31,7 +32,9 @@ bool Labeler::VideoPlayer::readImage()
 	if (!_capture.read(_frameBuffer))
 		return false;
 
-	_foregroundImg = _frameBuffer.clone();
+	std::stack<cv::Mat> empt;
+	std::swap(_historyMat, empt);
+	pushMat(_frameBuffer.clone());
 	_frameCounter++;
 
 	return true;
@@ -97,7 +100,7 @@ void mouseHandler(int event, int x, int y, int flags, void* param)
 				break;
 		}
 
-		cv::rectangle(img1, player->getPoint1(), player->getPoint2(), color, 2, 8, 0);
+		cv::rectangle(img1, player->getPoint1(), player->getPoint2(), color, 1, 8, 0);
 		cv::imshow(player->getWindowName(), img1);
 	}
 
@@ -120,7 +123,10 @@ void mouseHandler(int event, int x, int y, int flags, void* param)
 			color = Labeler::GREEN;
 			break;
 		}
-		cv::rectangle(player->getForegroundImage(), cv::Rect(player->getPoint1(), player->getPoint2()), color, 2);
+
+		cv::Mat frm = player->getForegroundImage().clone();
+		player->pushMat(frm);
+		cv::rectangle(player->getForegroundImage(), cv::Rect(player->getPoint1(), player->getPoint2()), color, 1);
 		cv::imshow(player->getWindowName(), player->getForegroundImage());
 		cv::Mat img = player->getFrame()(cv::Rect(player->getPoint1(), player->getPoint2()));
 		cv::imwrite("sdfsda.jpg", img);
