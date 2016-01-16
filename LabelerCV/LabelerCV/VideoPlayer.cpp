@@ -1,0 +1,130 @@
+#include "General.h"
+#include "VideoPlayer.h"
+
+using namespace Labeler;
+
+void timeTrackbarHandler(int pos, void* userdata);
+void mouseHandler(int event, int x, int y, int flags, void* param);
+
+Labeler::VideoPlayer::VideoPlayer(std::string videoPath, const char * winname) : _path(videoPath), _WIN_NAME(winname)
+{
+	if (!loadVideo(videoPath))
+		throw std::exception("Can't load the video");
+
+	cv::namedWindow(_WIN_NAME, cv::WINDOW_KEEPRATIO);
+	cv::createTrackbar(_TIMEBAR_NAME, _WIN_NAME, 0, vidlength, timeTrackbarHandler, reinterpret_cast<void*>(&_capture));
+	cv::setMouseCallback(_WIN_NAME, mouseHandler, this);
+}
+
+bool Labeler::VideoPlayer::isVideoEnded()
+{
+	return cv::getTrackbarPos(_TIMEBAR_NAME, _WIN_NAME) == (int)vidlength;
+}
+
+void Labeler::VideoPlayer::changeTime(int seconds)
+{
+	cv::setTrackbarPos(_TIMEBAR_NAME, _WIN_NAME, seconds);
+}
+
+bool Labeler::VideoPlayer::readImage()
+{
+	if (!_capture.read(_frameBuffer))
+		return false;
+
+	_foregroundImg = _frameBuffer.clone();
+	_frameCounter++;
+
+	return true;
+}
+
+void Labeler::VideoPlayer::showImage() 
+{
+	cv::imshow(_WIN_NAME, _frameBuffer);
+	cv::waitKey(show_interval);
+
+	if (_frameCounter % (int)fps == 0)
+		cv::setTrackbarPos(_TIMEBAR_NAME, _WIN_NAME, cv::getTrackbarPos(_TIMEBAR_NAME, _WIN_NAME) + 1);
+}
+
+bool Labeler::VideoPlayer::loadVideo(std::string VideoPath)
+{
+	_capture = cv::VideoCapture(_path);
+	if (_capture.isOpened())
+	{
+		fps = _capture.get(cv::CAP_PROP_FPS);
+		frame_count = _capture.get(cv::CAP_PROP_FRAME_COUNT);
+		vidlength = frame_count / fps;
+		show_interval = 1000 / fps;
+
+		return true;
+	}
+	else
+		return false;
+}
+
+
+void timeTrackbarHandler(int pos, void* userdata)
+{
+	cv::VideoCapture* vid = reinterpret_cast<cv::VideoCapture*>(userdata);
+	vid->set(cv::CAP_PROP_POS_MSEC, pos * 1000);
+}
+void mouseHandler(int event, int x, int y, int flags, void* param)
+{
+	VideoPlayer* player = (VideoPlayer*)param;
+	if (event == CV_EVENT_LBUTTONDOWN && !player->isMouseDragging())
+	{
+		/* left button clicked. ROI selection begins */
+		player->setPoint1(cv::Point(x, y));
+		player->setMouseDragging(true);
+	}
+
+	if (event == CV_EVENT_MOUSEMOVE && player->isMouseDragging())
+	{
+		/* mouse dragged. ROI being selected */
+		cv::Mat img1 = player->getForegroundImage().clone();
+		player->setPoint2(cv::Point(x, y));
+		cv::Scalar color;
+		switch (player->getLabel())
+		{
+			case LabelType::Human:
+				color = Labeler::RED;
+				break;
+			case LabelType::Car:
+				color = Labeler::BLUE;
+				break;
+			case LabelType::Animal:
+				color = Labeler::GREEN;
+				break;
+		}
+
+		cv::rectangle(img1, player->getPoint1(), player->getPoint2(), color, 2, 8, 0);
+		cv::imshow(player->getWindowName(), img1);
+	}
+
+	if (event == CV_EVENT_LBUTTONUP && player->isMouseDragging())
+	{
+		//cv::Mat img2 = foreground.clone();
+		player->setPoint2(cv::Point(x, y));
+		player->setMouseDragging(false);
+
+		cv::Scalar color;
+		switch (player->getLabel())
+		{
+		case LabelType::Human:
+			color = Labeler::RED;
+			break;
+		case LabelType::Car:
+			color = Labeler::BLUE;
+			break;
+		case LabelType::Animal:
+			color = Labeler::GREEN;
+			break;
+		}
+		cv::rectangle(player->getForegroundImage(), cv::Rect(player->getPoint1(), player->getPoint2()), color, 2);
+		cv::imshow(player->getWindowName(), player->getForegroundImage());
+		cv::Mat img = player->getFrame()(cv::Rect(player->getPoint1(), player->getPoint2()));
+		cv::imwrite("sdfsda.jpg", img);
+
+		player->increaseCropCounter();
+	}
+}
