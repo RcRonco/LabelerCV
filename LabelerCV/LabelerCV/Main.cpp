@@ -5,30 +5,70 @@
 #include <opencv2\highgui.hpp>
 
 LRESULT CALLBACK LLKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
-
+LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
 Labeler::VideoPlayer* video;
 MSG msg;
 HHOOK hKeyboard = 0;
 bool play_flag = true;
+bool shutdown_flag = false;
 const char * window_name = "POV - Dataset Slicer";
-int main()
-{
-	video = new Labeler::VideoPlayer("I:\\RonCohen\\Desktop\\testvid.mp4", window_name);
-	SetWindowsHookEx(WH_KEYBOARD_LL, LLKeyboardProc, 0, 0);
 
-	while (GetMessage(&msg,0,0,0))
+int main(int argc, char** argv )
+{
+	/*if (argc != 2)
+		return -1;
+
+	video = new Labeler::VideoPlayer(argv[1], window_name);*/
+	video = new Labeler::VideoPlayer("I:\\RonCohen\\Desktop\\testvid.mp4", window_name);
+	hKeyboard = SetWindowsHookEx(WH_KEYBOARD, KeyboardProc, 0, GetCurrentThreadId());
+
+	while (GetMessage(&msg,0,0,0) && !shutdown_flag)
 	{
 		// If video done restart it.
-		if (video->isVideoEnded())
-			video->changeTime();
+		//if (video->isVideoEnded())
+		//	video->changeTime();
 
 		for (int i = 0; play_flag && video->readImage() ; i++)
 			video->showImage();
 
 		cv::waitKey();
 	}
-}
 
+	UnhookWindowsHookEx(hKeyboard);
+}
+LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+	if (nCode == HC_ACTION)
+	{
+		if (wParam == VK_SPACE)
+		{
+			play_flag = !play_flag;
+		}
+		else if (wParam == '1')
+		{
+			video->setLabel(Labeler::LabelType::Human);
+		}
+		else if (wParam == '2')
+		{
+			video->setLabel(Labeler::LabelType::Car);
+		}
+		else if (wParam  == '3')
+		{
+			video->setLabel(Labeler::LabelType::Animal);
+		}
+		else if (wParam == 'Z' && GetAsyncKeyState(VK_CONTROL) == -32767)
+		{
+			video->getbackMat();
+		}
+		else if (wParam == VK_ESCAPE)
+		{
+			shutdown_flag = true;
+			cv::destroyAllWindows();
+		}
+	}
+
+	return (CallNextHookEx(hKeyboard, nCode, wParam, lParam));
+}
 LRESULT CALLBACK LLKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
 	if ((nCode == HC_ACTION) && ((wParam == WM_KEYUP) || (wParam == WM_SYSKEYUP)))
@@ -38,7 +78,6 @@ LRESULT CALLBACK LLKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 		if (ptrKbdll->vkCode == VK_SPACE)
 		{
 			play_flag = !play_flag;
-		//	cv::waitKey();
 		}
 		else if (ptrKbdll->vkCode == '1')
 		{
@@ -52,20 +91,15 @@ LRESULT CALLBACK LLKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 		{
 			video->setLabel(Labeler::LabelType::Animal);
 		}
-		else if (ptrKbdll->vkCode == 'Z')
+		else if (ptrKbdll->vkCode == 'Z' && GetAsyncKeyState(VK_CONTROL) == -32767)
 		{
 			video->getbackMat();
 		}
-	/*	else if (ptrKbdll->vkCode == VK_ESCAPE)
+		else if (ptrKbdll->vkCode == VK_ESCAPE)
 		{
-			if (!cv::getWindowProperty(window_name, CV_WND_PROP_FULLSCREEN))
-				cv::setWindowProperty(window_name, CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
-			else
-			{
-				cv::setWindowProperty(window_name, CV_WND_PROP_FULLSCREEN, 0);
-				cv::setWindowProperty(window_name, CV_WINDOW_KEEPRATIO, 1);
-			}
-		}*/
+			shutdown_flag = true;
+			cv::destroyAllWindows();
+		}
 	}
 
 	return (CallNextHookEx(hKeyboard, nCode, wParam, lParam));

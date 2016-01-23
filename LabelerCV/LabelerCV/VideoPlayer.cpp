@@ -1,10 +1,25 @@
 #include "General.h"
 #include "VideoPlayer.h"
+#include <ctime>
+#include <sstream>
+#include <Windows.h>
 
 using namespace Labeler;
 
 void timeTrackbarHandler(int pos, void* userdata);
 void mouseHandler(int event, int x, int y, int flags, void* param);
+
+bool dirExists(const std::string& dirName_in)
+{
+	DWORD ftyp = GetFileAttributesA(dirName_in.c_str());
+	if (ftyp == INVALID_FILE_ATTRIBUTES)
+		return false;  //something is wrong with your path!
+
+	if (ftyp & FILE_ATTRIBUTE_DIRECTORY)
+		return true;   // this is a directory!
+
+	return false;    // this is not a directory!
+}
 
 Labeler::VideoPlayer::VideoPlayer(std::string videoPath, const char * winname) : _path(videoPath), _WIN_NAME(winname)
 {
@@ -15,6 +30,14 @@ Labeler::VideoPlayer::VideoPlayer(std::string videoPath, const char * winname) :
 	//cv::setWindowProperty(_WIN_NAME, CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
 	cv::createTrackbar(_TIMEBAR_NAME, _WIN_NAME, 0, vidlength, timeTrackbarHandler, reinterpret_cast<void*>(&_capture));
 	cv::setMouseCallback(_WIN_NAME, mouseHandler, this);
+	
+
+	if (!dirExists("Humans"))
+		CreateDirectory(L"Humans", NULL);
+	if (!dirExists("Cars"))
+		CreateDirectory(L"Cars", NULL);
+	if (!dirExists("Animals"))
+		CreateDirectory(L"Animals", NULL);
 }
 
 bool Labeler::VideoPlayer::isVideoEnded()
@@ -32,8 +55,10 @@ bool Labeler::VideoPlayer::readImage()
 	if (!_capture.read(_frameBuffer))
 		return false;
 
+	CutImages();
 	std::stack<cv::Mat> empt;
 	std::swap(_historyMat, empt);
+
 	pushMat(_frameBuffer.clone());
 	_frameCounter++;
 
@@ -47,6 +72,39 @@ void Labeler::VideoPlayer::showImage()
 
 	if (_frameCounter % (int)fps == 0)
 		cv::setTrackbarPos(_TIMEBAR_NAME, _WIN_NAME, cv::getTrackbarPos(_TIMEBAR_NAME, _WIN_NAME) + 1);
+}
+
+void Labeler::VideoPlayer::CutImages()
+{
+	while (!_historyRects.empty())
+	{
+ 		stringstream strm;
+
+		switch (_historyRects.top().second)
+		{
+		case LabelType::Human:
+			strm << "Humans\\";
+			break;
+		case LabelType::Car:
+			strm << "Cars\\";
+			break;
+		case LabelType::Animal:
+			strm << "Animals\\";
+			break;
+		}
+
+		cv::Mat img = getFrame()(_historyRects.top().first);
+
+		strm << std::to_string(time(0)) << ".png";
+		cout << strm.str().c_str() << endl;
+
+		if (!cv::imwrite(strm.str(), img))
+			throw exception("Unable to save the picture");
+		_historyRects.pop();
+	}
+
+	std::stack<RectType> empt;
+	std::swap(_historyRects, empt);
 }
 
 bool Labeler::VideoPlayer::loadVideo(std::string VideoPath)
@@ -65,12 +123,12 @@ bool Labeler::VideoPlayer::loadVideo(std::string VideoPath)
 		return false;
 }
 
-
 void timeTrackbarHandler(int pos, void* userdata)
 {
 	cv::VideoCapture* vid = reinterpret_cast<cv::VideoCapture*>(userdata);
 	vid->set(cv::CAP_PROP_POS_MSEC, pos * 1000);
 }
+
 void mouseHandler(int event, int x, int y, int flags, void* param)
 {
 	VideoPlayer* player = (VideoPlayer*)param;
@@ -106,7 +164,6 @@ void mouseHandler(int event, int x, int y, int flags, void* param)
 
 	if (event == CV_EVENT_LBUTTONUP && player->isMouseDragging())
 	{
-		//cv::Mat img2 = foreground.clone();
 		player->setPoint2(cv::Point(x, y));
 		player->setMouseDragging(false);
 
@@ -126,11 +183,17 @@ void mouseHandler(int event, int x, int y, int flags, void* param)
 
 		cv::Mat frm = player->getForegroundImage().clone();
 		player->pushMat(frm);
-		cv::rectangle(player->getForegroundImage(), cv::Rect(player->getPoint1(), player->getPoint2()), color, 1);
+		cv::Rect rect(player->getPoint1(), player->getPoint2());
+		player->pushRect(RectType(rect, player->getLabel()));
+		cv::rectangle(player->getForegroundImage(), rect, color, 1);
 		cv::imshow(player->getWindowName(), player->getForegroundImage());
-		cv::Mat img = player->getFrame()(cv::Rect(player->getPoint1(), player->getPoint2()));
-		cv::imwrite("sdfsda.jpg", img);
 
-		player->increaseCropCounter();
+		/*cv::Mat img = player->getFrame()(cv::Rect(player->getPoint1(), player->getPoint2()));
+		
+		strm << std::to_string(time(0)) << ".png";
+		cout << strm.str().c_str() << endl;
+
+		if (!cv::imwrite(strm.str(), img))
+			throw exception("Unable to save the picture");*/
 	}
 }

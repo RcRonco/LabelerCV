@@ -10,6 +10,7 @@
 namespace Labeler
 {
 	enum class LabelType { Human, Car, Animal};
+	using RectType = std::pair<cv::Rect, LabelType>;
 	class VideoPlayer
 	{
 		private:
@@ -17,7 +18,7 @@ namespace Labeler
 			const char* _WIN_NAME;
 			std::string _path;
 			std::stack<cv::Mat> _historyMat;
-			//cv::Mat _foregroundImg;
+			std::stack<RectType> _historyRects;
 			cv::Mat _frameBuffer;
 			cv::VideoCapture _capture;
 			double fps, frame_count, vidlength, show_interval;
@@ -36,6 +37,7 @@ namespace Labeler
 			void changeTime(int seconds = 0);
 			bool readImage();
 			void showImage();
+			void CutImages();
 
 			cv::Mat getFrame() { return _frameBuffer; }
 			cv::Mat getForegroundImage() { return _historyMat.top(); }
@@ -49,10 +51,12 @@ namespace Labeler
 			void setLabel(LabelType lbtype) { label = lbtype; }
 			LabelType getLabel() { return label; }
 			void pushMat(cv::Mat& mt) { _historyMat.push(mt); }
+			void pushRect(RectType& rect) { _historyRects.push(rect); }
 			void getbackMat() 
 			{ 
  				if (_historyMat.size() > 1)
 				{
+					_historyRects.pop();
 					_historyMat.pop(); 
 					cv::imshow(_WIN_NAME, _historyMat.top());
 				}
