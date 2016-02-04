@@ -94,13 +94,15 @@ void Labeler::VideoPlayer::CutImages()
 		}
 
 		cv::Mat img = getFrame()(_historyRects.top().first);
+		if (img.data)
+		{
+			strm << std::to_string(time(0)) << ".png";
+			cout << strm.str().c_str() << endl;
 
-		strm << std::to_string(time(0)) << ".png";
-		cout << strm.str().c_str() << endl;
-
-		if (!cv::imwrite(strm.str(), img))
-			throw exception("Unable to save the picture");
-		_historyRects.pop();
+			if (!cv::imwrite(strm.str(), img))
+				throw exception("Unable to save the picture");
+			_historyRects.pop();
+		}
 	}
 
 	std::stack<RectType> empt;
