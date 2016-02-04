@@ -55,7 +55,6 @@ bool Labeler::VideoPlayer::readImage()
 	if (!_capture.read(_frameBuffer))
 		return false;
 
-	CutImages();
 	std::stack<cv::Mat> empt;
 	std::swap(_historyMat, empt);
 

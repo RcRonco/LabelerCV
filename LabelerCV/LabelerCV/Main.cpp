@@ -6,9 +6,11 @@
 
 LRESULT CALLBACK LLKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK WndProc(int nCode, WPARAM wParam, LPARAM lParam);
+
 Labeler::VideoPlayer* video;
 MSG msg;
-HHOOK hKeyboard = 0;
+HHOOK hKeyboard = 0, hWin = 0;
 bool play_flag = true;
 bool shutdown_flag = false;
 const char * window_name = "POV - Dataset Slicer";
@@ -22,12 +24,15 @@ int main(int argc, char** argv )
 	video = new Labeler::VideoPlayer("I:\\RonCohen\\Desktop\\testvid.mp4", window_name);
 	hKeyboard = SetWindowsHookEx(WH_KEYBOARD, KeyboardProc, 0, GetCurrentThreadId());
 
+	if (hKeyboard || hWin)
+	{
+		std::cout << "Failed to initialize hooks" << std::endl
+			      << "Error code: "<< std::to_string(GetLastError()) << std::endl;
+		return -1;
+	}
+
 	while (GetMessage(&msg,0,0,0) && !shutdown_flag)
 	{
-		// If video done restart it.
-		//if (video->isVideoEnded())
-		//	video->changeTime();
-
 		for (int i = 0; play_flag && video->readImage() ; i++)
 			video->showImage();
 
@@ -43,6 +48,7 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 		if (wParam == VK_SPACE)
 		{
 			play_flag = !play_flag;
+			video->CutImages();
 		}
 		else if (wParam == '1')
 		{
@@ -78,6 +84,7 @@ LRESULT CALLBACK LLKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 		if (ptrKbdll->vkCode == VK_SPACE)
 		{
 			play_flag = !play_flag;
+			video->CutImages();
 		}
 		else if (ptrKbdll->vkCode == '1')
 		{
