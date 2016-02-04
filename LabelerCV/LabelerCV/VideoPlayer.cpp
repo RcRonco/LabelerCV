@@ -76,6 +76,7 @@ void Labeler::VideoPlayer::showImage()
 
 void Labeler::VideoPlayer::CutImages()
 {
+	int a = 0;
 	while (!_historyRects.empty())
 	{
  		stringstream strm;
@@ -96,7 +97,8 @@ void Labeler::VideoPlayer::CutImages()
 		cv::Mat img = getFrame()(_historyRects.top().first);
 		if (img.data)
 		{
-			strm << std::to_string(time(0)) << ".png";
+			a++;
+			strm << std::to_string(time(0)) << "_" << std::to_string(a) << ".png";
 			cout << strm.str().c_str() << endl;
 
 			if (!cv::imwrite(strm.str(), img))
