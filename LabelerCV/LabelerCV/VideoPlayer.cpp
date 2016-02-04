@@ -2,24 +2,12 @@
 #include "VideoPlayer.h"
 #include <ctime>
 #include <sstream>
-#include <Windows.h>
+#include <boost\filesystem.hpp>
 
 using namespace Labeler;
 
 void timeTrackbarHandler(int pos, void* userdata);
 void mouseHandler(int event, int x, int y, int flags, void* param);
-
-bool dirExists(const std::string& dirName_in)
-{
-	DWORD ftyp = GetFileAttributesA(dirName_in.c_str());
-	if (ftyp == INVALID_FILE_ATTRIBUTES)
-		return false;  //something is wrong with your path!
-
-	if (ftyp & FILE_ATTRIBUTE_DIRECTORY)
-		return true;   // this is a directory!
-
-	return false;    // this is not a directory!
-}
 
 Labeler::VideoPlayer::VideoPlayer(std::string videoPath, const char * winname) : _path(videoPath), _WIN_NAME(winname)
 {
@@ -31,13 +19,12 @@ Labeler::VideoPlayer::VideoPlayer(std::string videoPath, const char * winname) :
 	cv::createTrackbar(_TIMEBAR_NAME, _WIN_NAME, 0, vidlength, timeTrackbarHandler, reinterpret_cast<void*>(&_capture));
 	cv::setMouseCallback(_WIN_NAME, mouseHandler, this);
 	
-
-	if (!dirExists("Humans"))
-		CreateDirectory(L"Humans", NULL);
-	if (!dirExists("Cars"))
-		CreateDirectory(L"Cars", NULL);
-	if (!dirExists("Animals"))
-		CreateDirectory(L"Animals", NULL);
+	if (boost::filesystem::exists(boost::filesystem::path(L"Humans")))
+		boost::filesystem::create_directory(boost::filesystem::path(L"Humans"));
+	if (boost::filesystem::exists(boost::filesystem::path(L"Cars")))
+		boost::filesystem::create_directory(boost::filesystem::path(L"Cars"));
+	if (boost::filesystem::exists(boost::filesystem::path(L"Animals")))
+		boost::filesystem::create_directory(boost::filesystem::path(L"Animals"));
 }
 
 bool Labeler::VideoPlayer::isVideoEnded()
@@ -75,7 +62,7 @@ void Labeler::VideoPlayer::showImage()
 
 void Labeler::VideoPlayer::CutImages()
 {
-	int a = 0;
+	uint32_t imgCounter = 0;
 	while (!_historyRects.empty())
 	{
  		stringstream strm;
@@ -96,8 +83,8 @@ void Labeler::VideoPlayer::CutImages()
 		cv::Mat img = getFrame()(_historyRects.top().first);
 		if (img.data)
 		{
-			a++;
-			strm << std::to_string(time(0)) << "_" << std::to_string(a) << ".png";
+			imgCounter++;
+			strm << std::to_string(time(0)) << "_" << std::to_string(imgCounter) << ".png";
 			cout << strm.str().c_str() << endl;
 
 			if (!cv::imwrite(strm.str(), img))
