@@ -17,12 +17,14 @@ const char * window_name = "POV - Dataset Slicer";
 
 int main(int argc, char** argv )
 {
-	/*if (argc != 2)
+	if (argc != 2)
 		return -1;
 
-	video = new Labeler::VideoPlayer(argv[1], window_name);*/
-	video = new Labeler::VideoPlayer("I:\\RonCohen\\Desktop\\testvid.mp4", window_name);
-	hKeyboard = SetWindowsHookEx(WH_KEYBOARD, KeyboardProc, 0, GetCurrentThreadId());
+	video = new Labeler::VideoPlayer(argv[1], window_name);
+	//video = new Labeler::VideoPlayer("I:\\RonCohen\\Desktop\\testvid.mp4", window_name);
+	//hKeyboard = SetWindowsHookEx(WH_KEYBOARD, KeyboardProc, 0, GetCurrentThreadId());
+	hKeyboard = SetWindowsHookEx(WH_KEYBOARD_LL, LLKeyboardProc, 0, 0);
+	hWin = SetWindowsHookEx(WH_CALLWNDPROC, WndProc, 0, 0);
 
 	if (hKeyboard || hWin)
 	{
@@ -110,4 +112,18 @@ LRESULT CALLBACK LLKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 	}
 
 	return (CallNextHookEx(hKeyboard, nCode, wParam, lParam));
+}
+LRESULT CALLBACK WndProc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+	if (nCode == HC_ACTION)
+	{
+		CWPSTRUCT* cwpStruct = (CWPSTRUCT*)lParam;
+		if (cwpStruct->message == WM_CLOSE)
+		{
+			shutdown_flag = true;
+			cv::destroyAllWindows();
+		}
+	}
+
+	return (CallNextHookEx(hWin, nCode, wParam, lParam));
 }
