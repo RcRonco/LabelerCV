@@ -72,7 +72,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>I:\RonCohen\Workspace\C++\Headers\opencv\build\include;I:\RonCohen\Workspace\C++\Headers;$(IncludePath)</IncludePath>
-    <LibraryPath>I:\RonCohen\Workspace\opencv-3.0.0\build\lib\Debug;$(LibraryPath)</LibraryPath>
+    <LibraryPath>I:\RonCohen\Workspace\C++\Headers\Boost.build\lib;I:\RonCohen\Workspace\opencv-3.0.0\build\lib\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -91,7 +91,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

@@ -1,47 +1,53 @@
 #include "General.h"
 #include "VideoPlayer.h"
-
 #include <Windows.h>
 #include <opencv2\highgui.hpp>
 
 LRESULT CALLBACK LLKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
-LRESULT CALLBACK WndProc(int nCode, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK Winhandle(int nCode, WPARAM wparam, LPARAM lp);
+
+const char * window_name = "PoV - Dataset Slicer";
 
 Labeler::VideoPlayer* video;
 MSG msg;
 HHOOK hKeyboard = 0, hWin = 0;
-bool play_flag = true;
-bool shutdown_flag = false;
-const char * window_name = "POV - Dataset Slicer";
 
-int main(int argc, char** argv )
+int main(int argc, char** argv)
 {
-	if (argc != 2)
-		return -1;
+	/*FreeConsole();
+	cv::imshow("glossary", cv::imread("glossary.png"));
+	cv::waitKey(10);
 
-	video = new Labeler::VideoPlayer(argv[1], window_name);
-	//video = new Labeler::VideoPlayer("I:\\RonCohen\\Desktop\\testvid.mp4", window_name);
+	Sleep(5000);
+	cv::destroyWindow("glossary");
+
+	if (argc != 2)
+		return -1;*/
+
+	//video = new Labeler::VideoPlayer(argv[1], window_name);
+	video = new Labeler::VideoPlayer("I:\\RonCohen\\Desktop\\testvid.mp4", window_name);
 	//hKeyboard = SetWindowsHookEx(WH_KEYBOARD, KeyboardProc, 0, GetCurrentThreadId());
 	hKeyboard = SetWindowsHookEx(WH_KEYBOARD_LL, LLKeyboardProc, 0, 0);
-	hWin = SetWindowsHookEx(WH_CALLWNDPROC, WndProc, 0, 0);
+	hWin = SetWindowsHookEx(WH_CALLWNDPROC, Winhandle, 0, GetCurrentThreadId());
 
-	if (hKeyboard || hWin)
+	while (GetMessage(&msg, 0, 0, 0))
 	{
-		std::cout << "Failed to initialize hooks" << std::endl
-			      << "Error code: "<< std::to_string(GetLastError()) << std::endl;
-		return -1;
-	}
+		cout << cv::getWindowProperty(window_name, 0) << endl;
 
-	while (GetMessage(&msg,0,0,0) && !shutdown_flag)
-	{
-		for (int i = 0; play_flag && video->readImage() ; i++)
+		for (int i = 0; video->isPlaying && video->readImage(); i++)
 			video->showImage();
-
-		cv::waitKey();
+		if (video->isPlaying)
+			cv::waitKey(2);
+		else
+			cv::waitKey();
 	}
 
+	cv::destroyAllWindows();
 	UnhookWindowsHookEx(hKeyboard);
+	UnhookWindowsHookEx(hWin);
+
+	return 0;
 }
 LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
@@ -49,8 +55,7 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 	{
 		if (wParam == VK_SPACE)
 		{
-			play_flag = !play_flag;
-			video->CutImages();
+			video->isPlaying = !video->isPlaying;
 		}
 		else if (wParam == '1')
 		{
@@ -60,7 +65,7 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 		{
 			video->setLabel(Labeler::LabelType::Car);
 		}
-		else if (wParam  == '3')
+		else if (wParam == '3')
 		{
 			video->setLabel(Labeler::LabelType::Animal);
 		}
@@ -70,7 +75,6 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 		}
 		else if (wParam == VK_ESCAPE)
 		{
-			shutdown_flag = true;
 			cv::destroyAllWindows();
 		}
 	}
@@ -85,45 +89,42 @@ LRESULT CALLBACK LLKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 
 		if (ptrKbdll->vkCode == VK_SPACE)
 		{
-			play_flag = !play_flag;
 			video->CutImages();
+			video->isPlaying = !video->isPlaying;
 		}
-		else if (ptrKbdll->vkCode == '1')
+		else if (ptrKbdll->vkCode == '1' || ptrKbdll->vkCode == 'T')
 		{
 			video->setLabel(Labeler::LabelType::Human);
 		}
-		else if (ptrKbdll->vkCode == '2')
+		else if (ptrKbdll->vkCode == '2' || ptrKbdll->vkCode == 'R')
 		{
 			video->setLabel(Labeler::LabelType::Car);
 		}
-		else if (ptrKbdll->vkCode == '3')
+		else if (ptrKbdll->vkCode == '3' || ptrKbdll->vkCode == 'C')
 		{
 			video->setLabel(Labeler::LabelType::Animal);
 		}
-		else if (ptrKbdll->vkCode == 'Z' && GetAsyncKeyState(VK_CONTROL) == -32767)
+		else if (ptrKbdll->vkCode == VK_BACK)
 		{
 			video->getbackMat();
 		}
 		else if (ptrKbdll->vkCode == VK_ESCAPE)
 		{
-			shutdown_flag = true;
 			cv::destroyAllWindows();
 		}
 	}
 
 	return (CallNextHookEx(hKeyboard, nCode, wParam, lParam));
 }
-LRESULT CALLBACK WndProc(int nCode, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK Winhandle(int nCode, WPARAM wparam, LPARAM lp)
 {
-	if (nCode == HC_ACTION)
+	CWPSTRUCT cpstruct = *(CWPSTRUCT*)lp;
+
+	if (cpstruct.message == WM_CLOSE)
 	{
-		CWPSTRUCT* cwpStruct = (CWPSTRUCT*)lParam;
-		if (cwpStruct->message == WM_CLOSE)
-		{
-			shutdown_flag = true;
-			cv::destroyAllWindows();
-		}
+		cv::destroyAllWindows();
+		exit(0);
 	}
 
-	return (CallNextHookEx(hWin, nCode, wParam, lParam));
+	return (CallNextHookEx(hWin, nCode, wparam, lp));
 }
