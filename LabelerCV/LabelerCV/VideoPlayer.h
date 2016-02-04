@@ -9,7 +9,7 @@
 
 namespace Labeler
 {
-	enum class LabelType { Human, Car, Animal};
+	enum class LabelType { Human, Car, Animal };
 	using RectType = std::pair<cv::Rect, LabelType>;
 	class VideoPlayer
 	{
