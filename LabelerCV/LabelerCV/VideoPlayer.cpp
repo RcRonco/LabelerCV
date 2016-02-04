@@ -21,11 +21,11 @@ Labeler::VideoPlayer::VideoPlayer(std::string videoPath, const char * winname) :
 	readImage();
 	showImage();
 
-	if (boost::filesystem::exists(boost::filesystem::path(L"Humans")))
+	if (!boost::filesystem::exists(boost::filesystem::path(L"Humans")))
 		boost::filesystem::create_directory(boost::filesystem::path(L"Humans"));
-	if (boost::filesystem::exists(boost::filesystem::path(L"Cars")))
+	if (!boost::filesystem::exists(boost::filesystem::path(L"Cars")))
 		boost::filesystem::create_directory(boost::filesystem::path(L"Cars"));
-	if (boost::filesystem::exists(boost::filesystem::path(L"Animals")))
+	if (!boost::filesystem::exists(boost::filesystem::path(L"Animals")))
 		boost::filesystem::create_directory(boost::filesystem::path(L"Animals"));
 }
 
