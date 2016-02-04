@@ -1,25 +1,28 @@
-
 #ifndef _RC_VIDEO_PLAYER_H
 #define _RC_VIDEO_PLAYER_H
-#include "General.h"
 
 #include <stdint.h>
 #include <opencv.hpp>
-#include <stack>
+#include <vector>
 
 namespace Labeler
 {
 	enum class LabelType { Human, Car, Animal };
 
+	const cv::Scalar BLUE(255, 0, 0);
+	const cv::Scalar GREEN(0, 255, 0);
+	const cv::Scalar RED(0, 0, 255);
+
 	using RectType = std::pair<cv::Rect, LabelType>;
+
 	class VideoPlayer
 	{
 	private:
 		const char* _TIMEBAR_NAME = "Timeline";
 		const char* _WIN_NAME;
 		std::string _path;
-		std::stack<cv::Mat> _historyMat;
-		std::stack<RectType> _historyRects;
+		cv::Mat _foregroundMat;
+		std::vector<RectType> _historyRects;
 		cv::Mat _frameBuffer;
 		cv::VideoCapture _capture;
 		double fps, frame_count, vidlength, show_interval;
@@ -43,7 +46,7 @@ namespace Labeler
 		void CutImages();
 
 		cv::Mat getFrame() { return _frameBuffer; }
-		cv::Mat getForegroundImage() { return _historyMat.top(); }
+		cv::Mat getForegroundImage() { return _foregroundMat; }
 		void setPoint1(cv::Point point) { point1 = point; }
 		void setPoint2(cv::Point point) { point2 = point; }
 		cv::Point getPoint1() { return point1; }
@@ -53,17 +56,9 @@ namespace Labeler
 		const char* getWindowName() const { return _WIN_NAME; }
 		void setLabel(LabelType lbtype) { label = lbtype; }
 		LabelType getLabel() { return label; }
-		void pushMat(cv::Mat& mt) { _historyMat.push(mt); }
-		void pushRect(RectType& rect) { _historyRects.push(rect); }
-		void getbackMat()
-		{
-			if (_historyMat.size() > 1)
-			{
-				_historyRects.pop();
-				_historyMat.pop();
-				cv::imshow(_WIN_NAME, _historyMat.top());
-			}
-		}
+		void pushRect(RectType& rect) { _historyRects.push_back(rect); }
+		void getbackMat();
+
 	private:
 		bool loadVideo(std::string VideoPath);
 	};

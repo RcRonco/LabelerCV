@@ -150,7 +150,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="General.h" />
     <ClInclude Include="VideoPlayer.h" />
   </ItemGroup>
   <ItemGroup>

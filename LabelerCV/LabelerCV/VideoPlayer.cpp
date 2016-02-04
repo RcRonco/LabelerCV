@@ -1,5 +1,5 @@
-#include "General.h"
 #include "VideoPlayer.h"
+
 #include <ctime>
 #include <sstream>
 #include <boost\filesystem.hpp>
@@ -47,10 +47,7 @@ bool Labeler::VideoPlayer::readImage()
 		return false;
 	}
 
-	std::stack<cv::Mat> empt;
-	std::swap(_historyMat, empt);
-
-	pushMat(_frameBuffer.clone());
+	_foregroundMat = _frameBuffer.clone();
 	_frameCounter++;
 
 	return true;
@@ -70,9 +67,9 @@ void Labeler::VideoPlayer::CutImages()
 	uint32_t imgCounter = 0;
 	while (!_historyRects.empty())
 	{
- 		stringstream strm;
+ 		std::stringstream strm;
 
-		switch (_historyRects.top().second)
+		switch (_historyRects[0].second)
 		{
 		case LabelType::Human:
 			strm << "Humans\\";
@@ -85,21 +82,50 @@ void Labeler::VideoPlayer::CutImages()
 			break;
 		}
 
-		cv::Mat img = getFrame()(_historyRects.top().first);
+		cv::Mat img = getFrame()(_historyRects[0].first);
 		if (img.data)
 		{
 			imgCounter++;
 			strm << std::to_string(time(0)) << "_" << std::to_string(imgCounter) << ".png";
-			cout << strm.str().c_str() << endl;
+			std::cout << strm.str().c_str() << std::endl;
 
 			if (!cv::imwrite(strm.str(), img))
-				throw exception("Unable to save the picture");
-			_historyRects.pop();
+				throw std::exception("Unable to save the picture");
+			_historyRects.pop_back();
 		}
 	}
 
-	std::stack<RectType> empt;
+	std::vector<RectType> empt;
 	std::swap(_historyRects, empt);
+}
+
+void Labeler::VideoPlayer::getbackMat()
+{
+	if (_historyRects.size() > 0)
+	{
+		_historyRects.pop_back();
+		_foregroundMat = _frameBuffer.clone();
+
+		for (RectType rect : _historyRects)
+		{
+			cv::Scalar color;
+			switch (rect.second)
+			{
+			case LabelType::Human:
+				color = Labeler::RED;
+				break;
+			case LabelType::Car:
+				color = Labeler::BLUE;
+				break;
+			case LabelType::Animal:
+				color = Labeler::GREEN;
+				break;
+			}
+			cv::rectangle(_foregroundMat, rect.first, color, 1);
+		}
+
+		cv::imshow(_WIN_NAME, _foregroundMat);
+	}
 }
 
 bool Labeler::VideoPlayer::loadVideo(std::string VideoPath)
@@ -179,8 +205,7 @@ void mouseHandler(int event, int x, int y, int flags, void* param)
 				break;
 			}
 
-			cv::Mat frm = videoPlayer->getForegroundImage().clone();
-			videoPlayer->pushMat(frm);
+			cv::Mat frm = videoPlayer->getForegroundImage();
 
 			if (videoPlayer->getPoint2().x < 0)
 				videoPlayer->setPoint2(cv::Point(0, videoPlayer->getPoint2().y));

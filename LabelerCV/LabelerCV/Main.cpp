@@ -1,6 +1,4 @@
-#include "General.h"
 #include "VideoPlayer.h"
-#include <boost\filesystem.hpp>
 #include <Windows.h>
 #include <opencv2\highgui.hpp>
 
@@ -27,7 +25,7 @@ int main(int argc, char** argv)
 
 	while (GetMessage(&msg, 0, 0, 0))
 	{
-		cout << cv::getWindowProperty(window_name, 0) << endl;
+		std::cout << cv::getWindowProperty(window_name, 0) << std::endl;
 
 		for (int i = 0; video->isPlaying && video->readImage(); i++)
 			video->showImage();
