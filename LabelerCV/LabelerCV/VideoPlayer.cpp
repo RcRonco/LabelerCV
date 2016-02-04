@@ -121,21 +121,22 @@ void timeTrackbarHandler(int pos, void* userdata)
 
 void mouseHandler(int event, int x, int y, int flags, void* param)
 {
-	VideoPlayer* player = (VideoPlayer*)param;
-	if (event == CV_EVENT_LBUTTONDOWN && !player->isMouseDragging())
+	VideoPlayer* videoPlayer = (VideoPlayer*)param;
+
+	if (event == CV_EVENT_LBUTTONDOWN && !videoPlayer->isMouseDragging())
 	{
 		/* left button clicked. ROI selection begins */
-		player->setPoint1(cv::Point(x, y));
-		player->setMouseDragging(true);
+		videoPlayer->setPoint1(cv::Point(x, y));
+		videoPlayer->setMouseDragging(true);
 	}
 
-	if (event == CV_EVENT_MOUSEMOVE && player->isMouseDragging())
+	if (event == CV_EVENT_MOUSEMOVE && videoPlayer->isMouseDragging())
 	{
 		/* mouse dragged. ROI being selected */
-		cv::Mat img1 = player->getForegroundImage().clone();
-		player->setPoint2(cv::Point(x, y));
+		cv::Mat img1 = videoPlayer->getForegroundImage().clone();
+		videoPlayer->setPoint2(cv::Point(x, y));
 		cv::Scalar color;
-		switch (player->getLabel())
+		switch (videoPlayer->getLabel())
 		{
 			case LabelType::Human:
 				color = Labeler::RED;
@@ -148,42 +149,45 @@ void mouseHandler(int event, int x, int y, int flags, void* param)
 				break;
 		}
 
-		cv::rectangle(img1, player->getPoint1(), player->getPoint2(), color, 1, 8, 0);
-		cv::imshow(player->getWindowName(), img1);
+		cv::rectangle(img1, videoPlayer->getPoint1(), videoPlayer->getPoint2(), color, 1, 8, 0);
+		cv::imshow(videoPlayer->getWindowName(), img1);
 	}
 
-	if (event == CV_EVENT_LBUTTONUP && player->isMouseDragging())
+	if (event == CV_EVENT_LBUTTONUP && videoPlayer->isMouseDragging())
 	{
-		player->setPoint2(cv::Point(x, y));
-		player->setMouseDragging(false);
+		videoPlayer->setPoint2(cv::Point(x, y));
+		videoPlayer->setMouseDragging(false);
 
 		cv::Scalar color;
-		switch (player->getLabel())
+		switch (videoPlayer->getLabel())
 		{
-		case LabelType::Human:
-			color = Labeler::RED;
-			break;
-		case LabelType::Car:
-			color = Labeler::BLUE;
-			break;
-		case LabelType::Animal:
-			color = Labeler::GREEN;
-			break;
+			case LabelType::Human:
+				color = Labeler::RED;
+				break;
+			case LabelType::Car:
+				color = Labeler::BLUE;
+				break;
+			case LabelType::Animal:
+				color = Labeler::GREEN;
+				break;
 		}
-
-		cv::Mat frm = player->getForegroundImage().clone();
-		player->pushMat(frm);
-		cv::Rect rect(player->getPoint1(), player->getPoint2());
-		player->pushRect(RectType(rect, player->getLabel()));
-		cv::rectangle(player->getForegroundImage(), rect, color, 1);
-		cv::imshow(player->getWindowName(), player->getForegroundImage());
-
-		/*cv::Mat img = player->getFrame()(cv::Rect(player->getPoint1(), player->getPoint2()));
 		
-		strm << std::to_string(time(0)) << ".png";
-		cout << strm.str().c_str() << endl;
+		cv::Mat frm = videoPlayer->getForegroundImage().clone();
+		videoPlayer->pushMat(frm);
 
-		if (!cv::imwrite(strm.str(), img))
-			throw exception("Unable to save the picture");*/
+		if (videoPlayer->getPoint2().x < 0)
+			videoPlayer->setPoint2(cv::Point(0, videoPlayer->getPoint2().y));
+		else if (videoPlayer->getPoint2().x > frm.cols)
+			videoPlayer->setPoint2(cv::Point(frm.cols, videoPlayer->getPoint2().y));
+		if (videoPlayer->getPoint2().y < 0)
+			videoPlayer->setPoint2(cv::Point(videoPlayer->getPoint2().x, 0));
+		else if (videoPlayer->getPoint2().y > frm.rows)
+			videoPlayer->setPoint2(cv::Point(videoPlayer->getPoint2().x, frm.rows));
+
+
+		cv::Rect rect(videoPlayer->getPoint1(), videoPlayer->getPoint2());
+		videoPlayer->pushRect(RectType(rect, videoPlayer->getLabel()));
+		cv::rectangle(videoPlayer->getForegroundImage(), rect, color, 1);
+		cv::imshow(videoPlayer->getWindowName(), videoPlayer->getForegroundImage());
 	}
 }

@@ -11,6 +11,7 @@ namespace Labeler
 {
 	enum class LabelType { Human, Car, Animal };
 	using RectType = std::pair<cv::Rect, LabelType>;
+
 	class VideoPlayer
 	{
 		private:
@@ -61,6 +62,7 @@ namespace Labeler
 					cv::imshow(_WIN_NAME, _historyMat.top());
 				}
 			}
+
 		private:
 			bool loadVideo(std::string VideoPath);
 	};
