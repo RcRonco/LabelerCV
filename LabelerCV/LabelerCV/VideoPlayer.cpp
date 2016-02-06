@@ -9,6 +9,10 @@ using namespace Labeler;
 void timeTrackbarHandler(int pos, void* userdata);
 void mouseHandler(int event, int x, int y, int flags, void* param);
 
+#define LABLER_SPACE  0x20
+#define LABLER_BACK   0x08
+#define LABLER_ESCAPE 0x1B
+
 Labeler::VideoPlayer::VideoPlayer(std::string videoPath, const char * winname) : _path(videoPath), _WIN_NAME(winname)
 {
 	if (!loadVideo(videoPath))
@@ -34,6 +38,38 @@ bool Labeler::VideoPlayer::isVideoEnded()
 	return cv::getTrackbarPos(_TIMEBAR_NAME, _WIN_NAME) == (int)vidlength;
 }
 
+void  Labeler::VideoPlayer::keyAction(char key)
+{
+	if (key == LABLER_SPACE)
+	{
+		CutImages();
+		isPlaying = !isPlaying;
+	}
+	else if (key == '1' || key == 'T')
+	{
+		setLabel(Labeler::LabelType::Human);
+	}
+	else if (key == '2' || key == 'R')
+	{
+		setLabel(Labeler::LabelType::Car);
+	}
+	else if (key == '3' || key == 'C')
+	{
+		setLabel(Labeler::LabelType::Animal);
+	}
+	// 0x08 BACK
+	else if (key == LABLER_BACK)
+	{
+		getbackMat();
+	}
+	// 0x1B ESCAPE
+	else if (key == LABLER_ESCAPE)
+	{
+		cv::destroyAllWindows();
+		exit(0);
+	}
+}
+
 void Labeler::VideoPlayer::changeTime(int seconds)
 {
 	cv::setTrackbarPos(_TIMEBAR_NAME, _WIN_NAME, seconds);
@@ -56,7 +92,7 @@ bool Labeler::VideoPlayer::readImage()
 void Labeler::VideoPlayer::showImage() 
 {
 	cv::imshow(_WIN_NAME, _frameBuffer);
-	cv::waitKey(show_interval);
+	keyAction(cv::waitKey(show_interval));
 
 	if (_frameCounter % (int)fps == 0)
 		cv::setTrackbarPos(_TIMEBAR_NAME, _WIN_NAME, cv::getTrackbarPos(_TIMEBAR_NAME, _WIN_NAME) + 1);
@@ -65,11 +101,12 @@ void Labeler::VideoPlayer::showImage()
 void Labeler::VideoPlayer::CutImages()
 {
 	uint32_t imgCounter = 0;
+
 	while (!_historyRects.empty())
 	{
  		std::stringstream strm;
 
-		switch (_historyRects[0].second)
+		switch (_historyRects[_historyRects.size() - 1].second)
 		{
 		case LabelType::Human:
 			strm << "Humans\\";
@@ -82,7 +119,7 @@ void Labeler::VideoPlayer::CutImages()
 			break;
 		}
 
-		cv::Mat img = getFrame()(_historyRects[0].first);
+		cv::Mat img = getFrame()(_historyRects[_historyRects.size() - 1].first);
 		if (img.data)
 		{
 			imgCounter++;

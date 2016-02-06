@@ -44,6 +44,7 @@ namespace Labeler
 		bool readImage();
 		void showImage();
 		void CutImages();
+		void keyAction(char key);
 
 		cv::Mat getFrame() { return _frameBuffer; }
 		cv::Mat getForegroundImage() { return _foregroundMat; }
