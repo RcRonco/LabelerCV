@@ -57,12 +57,10 @@ void  Labeler::VideoPlayer::keyAction(char key)
 	{
 		setLabel(Labeler::LabelType::Animal);
 	}
-	// 0x08 BACK
 	else if (key == LABLER_BACK)
 	{
 		getbackMat();
 	}
-	// 0x1B ESCAPE
 	else if (key == LABLER_ESCAPE)
 	{
 		cv::destroyAllWindows();
