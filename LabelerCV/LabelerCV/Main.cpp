@@ -4,10 +4,10 @@
 using namespace Labeler;
 const char * window_name = "PoV - Dataset Slicer";
 
-Labeler::VideoPlayer* video;
-
 int main(int argc, char** argv)
 {
+	VideoPlayer* video;
+
 	if (argc != 2)
 		return -1;
 
@@ -30,6 +30,7 @@ int main(int argc, char** argv)
 	}
 
 	cv::destroyAllWindows();
+	delete video;
 
 	return 0;
 }

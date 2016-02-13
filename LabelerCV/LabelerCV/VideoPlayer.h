@@ -13,7 +13,7 @@ namespace Labeler
 	const cv::Scalar GREEN(0, 255, 0);
 	const cv::Scalar RED(0, 0, 255);
 
-	using RectType = std::pair<cv::Rect, LabelType>;
+	using LabeledRect = std::pair<cv::Rect, LabelType>;
 
 	class VideoPlayer
 	{
@@ -22,7 +22,7 @@ namespace Labeler
 		const char* _WIN_NAME;
 		std::string _path;
 		cv::Mat _foregroundMat;
-		std::vector<RectType> _historyRects;
+		std::vector<LabeledRect> _historyRects;
 		cv::Mat _frameBuffer;
 		cv::VideoCapture _capture;
 		double fps, frame_count, vidlength, show_interval;
@@ -59,11 +59,13 @@ namespace Labeler
 		const char* getWindowName() const { return _WIN_NAME; }
 		void setLabel(LabelType lbtype) { label = lbtype; }
 		LabelType getLabel() { return label; }
-		void pushRect(RectType& rect) { _historyRects.push_back(rect); }
+		void pushRect(LabeledRect& rect) { _historyRects.push_back(rect); }
 		void getbackMat();
+		void SaveImage();
 
 	private:
 		bool loadVideo(std::string VideoPath);
+
 	};
 };
 

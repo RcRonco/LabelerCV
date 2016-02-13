@@ -1,6 +1,7 @@
 #include "VideoPlayer.h"
 
 #include <ctime>
+#include <fstream>
 #include <sstream>
 #include <boost\filesystem.hpp>
 
@@ -66,9 +67,13 @@ void  Labeler::VideoPlayer::keyAction(char key)
 		cv::destroyAllWindows();
 		exit(0);
 	}
-	else if (key == 'C' || key == 'c')
+	else if (key == 'S' || key == 's')
 	{
-
+		if (!this->isPlaying)
+		{
+			SaveImage();
+			this->isPlaying = true;
+		}
 	}
 }
 
@@ -140,7 +145,7 @@ void Labeler::VideoPlayer::CutImages()
 		}
 	}
 
-	std::vector<RectType> empt;
+	std::vector<LabeledRect> empt;
 	std::swap(_historyRects, empt);
 }
 
@@ -151,7 +156,7 @@ void Labeler::VideoPlayer::getbackMat()
 		_historyRects.pop_back();
 		_foregroundMat = _frameBuffer.clone();
 
-		for (RectType rect : _historyRects)
+		for (LabeledRect rect : _historyRects)
 		{
 			cv::Scalar color;
 			switch (rect.second)
@@ -171,6 +176,38 @@ void Labeler::VideoPlayer::getbackMat()
 
 		cv::imshow(_WIN_NAME, _foregroundMat);
 	}
+}
+
+void Labeler::VideoPlayer::SaveImage()
+{
+	std::stringstream imgFilename, datafileName, data;
+	imgFilename << "Fulls\\" << std::to_string(time(0)) << ".jpg";
+	datafileName << "Fulls\\" << std::to_string(time(0)) << ".dat";
+	data << "Type:x:y:width:height" << std::endl;
+	for (LabeledRect rect : this->_historyRects)
+	{
+		switch (rect.second)
+		{
+		case LabelType::Human:
+			data << "Humans:";
+			break;
+		case LabelType::Car:
+			data << "Cars:";
+			break;
+		case LabelType::Animal:
+			data << "Animals:";
+			break;
+		}
+
+		data << rect.first.x << ":" << rect.first.y << ":" << rect.first.width << ":" << rect.first.height << std::endl;
+	}
+
+	cv::imwrite(imgFilename.str(), this->getFrame());
+	std::ofstream ofs(datafileName.str(), std::ios::out);
+	if (ofs.is_open())
+		ofs << data.rdbuf();
+
+	ofs.close();
 }
 
 bool Labeler::VideoPlayer::loadVideo(std::string VideoPath)
@@ -266,7 +303,7 @@ void mouseHandler(int event, int x, int y, int flags, void* param)
 
 			if (rect.size().area() > 100)
 			{
-				videoPlayer->pushRect(RectType(rect, videoPlayer->getLabel()));
+				videoPlayer->pushRect(LabeledRect(rect, videoPlayer->getLabel()));
 				cv::rectangle(videoPlayer->getForegroundImage(), rect, color, 1);
 				cv::imshow(videoPlayer->getWindowName(), videoPlayer->getForegroundImage());
 			}
