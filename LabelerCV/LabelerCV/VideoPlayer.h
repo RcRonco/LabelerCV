@@ -26,12 +26,14 @@ namespace Labeler
 		cv::Mat _frameBuffer;
 		cv::VideoCapture _capture;
 		double fps, frame_count, vidlength, show_interval;
-		uint64_t _frameCounter = 0, cropIndex = 0;
+		uint32_t _frameCounter = 0, cropIndex = 0;
 		cv::Point point1, point2;
 		bool drag = false;
 		LabelType label = LabelType::Human;
+
 	public:
 		bool isPlaying = false;
+		bool Shutdown = false;
 
 	public:
 		VideoPlayer() = default;

@@ -45,15 +45,15 @@ void  Labeler::VideoPlayer::keyAction(char key)
 		CutImages();
 		isPlaying = !isPlaying;
 	}
-	else if (key == '1' || key == 'T')
+	else if (key == '1' || key == 'T' || key == 't')
 	{
 		setLabel(Labeler::LabelType::Human);
 	}
-	else if (key == '2' || key == 'R')
+	else if (key == '2' || key == 'R' || key == 'r')
 	{
 		setLabel(Labeler::LabelType::Car);
 	}
-	else if (key == '3' || key == 'C')
+	else if (key == '3' || key == 'C' || key == 'c')
 	{
 		setLabel(Labeler::LabelType::Animal);
 	}
@@ -65,6 +65,10 @@ void  Labeler::VideoPlayer::keyAction(char key)
 	{
 		cv::destroyAllWindows();
 		exit(0);
+	}
+	else if (key == 'C' || key == 'c')
+	{
+
 	}
 }
 
@@ -89,6 +93,12 @@ bool Labeler::VideoPlayer::readImage()
 
 void Labeler::VideoPlayer::showImage() 
 {
+	if (cv::getWindowProperty(_WIN_NAME, CV_WND_PROP_FULLSCREEN) == -1)
+	{
+		Shutdown = true;
+		return;
+	}
+
 	cv::imshow(_WIN_NAME, _frameBuffer);
 	keyAction(cv::waitKey(show_interval));
 
