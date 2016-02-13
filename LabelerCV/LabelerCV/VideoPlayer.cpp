@@ -26,6 +26,8 @@ Labeler::VideoPlayer::VideoPlayer(std::string videoPath, const char * winname) :
 	readImage();
 	showImage();
 
+	if (!boost::filesystem::exists(boost::filesystem::path(L"Full")))
+		boost::filesystem::create_directory(boost::filesystem::path(L"Full"));
 	if (!boost::filesystem::exists(boost::filesystem::path(L"Humans")))
 		boost::filesystem::create_directory(boost::filesystem::path(L"Humans"));
 	if (!boost::filesystem::exists(boost::filesystem::path(L"Cars")))
@@ -181,8 +183,8 @@ void Labeler::VideoPlayer::getbackMat()
 void Labeler::VideoPlayer::SaveImage()
 {
 	std::stringstream imgFilename, datafileName, data;
-	imgFilename << "Fulls\\" << std::to_string(time(0)) << ".jpg";
-	datafileName << "Fulls\\" << std::to_string(time(0)) << ".dat";
+	imgFilename << "Full\\" << std::to_string(time(0)) << ".jpg";
+	datafileName << "Full\\" << std::to_string(time(0)) << ".dat";
 	data << "Type:x:y:width:height" << std::endl;
 	for (LabeledRect rect : this->_historyRects)
 	{
