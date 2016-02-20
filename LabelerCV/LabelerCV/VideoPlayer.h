@@ -25,7 +25,7 @@ namespace Labeler
 		std::vector<LabeledRect> _historyRects;
 		cv::Mat _frameBuffer;
 		cv::VideoCapture _capture;
-		double fps, frame_count, vidlength, show_interval;
+		uint32_t fps, frame_count, vidlength, show_interval;
 		uint32_t _frameCounter = 0, cropIndex = 0;
 		cv::Point point1, point2;
 		bool drag = false;
@@ -36,32 +36,36 @@ namespace Labeler
 		bool Shutdown = false;
 
 	public:
-		VideoPlayer() = default;
 		VideoPlayer(std::string videoPath, const char* winname);
 
-		bool isMouseDragging() { return drag; }
-		void setMouseDragging(bool state) { drag = state; }
-		bool isVideoEnded();
-		void changeTime(int seconds = 0);
-		bool readImage();
+		bool isVideoEnded() noexcept;
+		void changeTime(int seconds = 0) noexcept;
+		bool readImage() noexcept;
 		void showImage();
 		void CutImages();
-		void keyAction(char key);
-
-		cv::Mat getFrame() { return _frameBuffer; }
-		cv::Mat getForegroundImage() { return _foregroundMat; }
-		void setPoint1(cv::Point point) { point1 = point; }
-		void setPoint2(cv::Point point) { point2 = point; }
-		cv::Point getPoint1() { return point1; }
-		cv::Point getPoint2() { return point2; }
-		uint64_t  getCropCounter() { return cropIndex; }
-		uint64_t  increaseCropCounter() { cropIndex++;  return cropIndex; }
-		const char* getWindowName() const { return _WIN_NAME; }
-		void setLabel(LabelType lbtype) { label = lbtype; }
-		LabelType getLabel() { return label; }
-		void pushRect(LabeledRect& rect) { _historyRects.push_back(rect); }
-		void getbackMat();
 		void SaveImage();
+		void getbackMat();
+		void keyAction(char key);
+		void pushRect(LabeledRect& rect) noexcept;
+
+		// Access Methods
+		cv::Mat getFrame() noexcept { return _frameBuffer; }
+		cv::Mat getForegroundImage() noexcept { return _foregroundMat; }
+
+		bool isMouseDragging() noexcept { return drag; }
+		void setMouseDragging(bool state) noexcept { drag = state; }
+
+		cv::Point getPoint1() noexcept { return point1; }
+		void setPoint1(cv::Point point) noexcept { point1 = point; }
+
+		cv::Point getPoint2() noexcept { return point2; }
+		void setPoint2(cv::Point point) noexcept { point2 = point; }
+
+		void setLabel(LabelType lbtype) noexcept { label = lbtype; }
+		LabelType getLabel() noexcept { return label; }
+
+		uint64_t  getCropCounter() noexcept { return cropIndex; }
+		const char* getWindowName() const noexcept { return _WIN_NAME; }
 
 	private:
 		bool loadVideo(std::string VideoPath);

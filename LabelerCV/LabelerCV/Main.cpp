@@ -1,4 +1,5 @@
 #include "VideoPlayer.h"
+#include <memory>
 #include <opencv2\highgui.hpp>
 
 using namespace Labeler;
@@ -6,16 +7,12 @@ const char * window_name = "PoV - Dataset Slicer";
 
 int main(int argc, char** argv)
 {
-	VideoPlayer* video;
-
 	if (argc != 2)
 		return -1;
 
 	int key = 0;
-
-	video = new Labeler::VideoPlayer(argv[1], window_name);
-
-
+	auto video = std::make_unique<VideoPlayer>(argv[1], window_name);
+	
 	while ((cv::getWindowProperty(window_name, CV_WND_PROP_FULLSCREEN) != -1) && !video->Shutdown)
 	{
 		for (int i = 0; video->isPlaying && video->readImage(); i++)
@@ -30,7 +27,6 @@ int main(int argc, char** argv)
 	}
 
 	cv::destroyAllWindows();
-	delete video;
 
 	return 0;
 }

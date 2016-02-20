@@ -7,7 +7,7 @@
 
 using namespace Labeler;
 
-void timeTrackbarHandler(int pos, void* userdata);
+void timeTrackbarHandler(int pos, void* userdata) noexcept;
 void mouseHandler(int event, int x, int y, int flags, void* param);
 
 #define LABLER_SPACE  0x20
@@ -36,9 +36,9 @@ Labeler::VideoPlayer::VideoPlayer(std::string videoPath, const char * winname) :
 		boost::filesystem::create_directory(boost::filesystem::path(L"Animals"));
 }
 
-bool Labeler::VideoPlayer::isVideoEnded()
+bool Labeler::VideoPlayer::isVideoEnded() noexcept
 {
-	return cv::getTrackbarPos(_TIMEBAR_NAME, _WIN_NAME) == (int)vidlength;
+	return cv::getTrackbarPos(_TIMEBAR_NAME, _WIN_NAME) == vidlength;
 }
 
 void  Labeler::VideoPlayer::keyAction(char key)
@@ -79,12 +79,18 @@ void  Labeler::VideoPlayer::keyAction(char key)
 	}
 }
 
-void Labeler::VideoPlayer::changeTime(int seconds)
+void Labeler::VideoPlayer::pushRect(LabeledRect & rect) noexcept
 {
-	cv::setTrackbarPos(_TIMEBAR_NAME, _WIN_NAME, seconds);
+	_historyRects.push_back(rect);
 }
 
-bool Labeler::VideoPlayer::readImage()
+void Labeler::VideoPlayer::changeTime(int seconds) noexcept
+{
+	if (seconds > 0 && seconds <= this->vidlength)
+		cv::setTrackbarPos(_TIMEBAR_NAME, _WIN_NAME, seconds);
+}
+
+bool Labeler::VideoPlayer::readImage() noexcept
 {
 	if (!_capture.read(_frameBuffer))
 	{
@@ -228,7 +234,7 @@ bool Labeler::VideoPlayer::loadVideo(std::string VideoPath)
 		return false;
 }
 
-void timeTrackbarHandler(int pos, void* userdata)
+void timeTrackbarHandler(int pos, void* userdata) noexcept
 {
 	cv::VideoCapture* vid = reinterpret_cast<cv::VideoCapture*>(userdata);
 	vid->set(cv::CAP_PROP_POS_MSEC, pos * 1000);
