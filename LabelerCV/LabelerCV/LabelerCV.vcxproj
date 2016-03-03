@@ -73,6 +73,7 @@
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>I:\RonCohen\Workspace\C++\Headers\opencv\build\include;I:\RonCohen\Workspace\C++\Headers;$(IncludePath)</IncludePath>
     <LibraryPath>I:\RonCohen\Workspace\C++\Headers\Boost.build\lib;I:\RonCohen\Workspace\opencv-3.0.0\build\lib\Debug;$(LibraryPath)</LibraryPath>
+    <SourcePath>I:\RonCohen\Workspace\Main Projects\LabelerCV\LabelerCV\LabelerCV\bin;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -150,6 +151,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ImageRefactor.h" />
     <ClInclude Include="VideoPlayer.h" />
   </ItemGroup>
   <ItemGroup>

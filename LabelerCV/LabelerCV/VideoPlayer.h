@@ -37,7 +37,7 @@ namespace Labeler
 
 	public:
 		VideoPlayer(std::string videoPath, const char* winname);
-
+		void run();
 		bool isVideoEnded() noexcept;
 		void changeTime(int seconds = 0) noexcept;
 		bool readImage() noexcept;

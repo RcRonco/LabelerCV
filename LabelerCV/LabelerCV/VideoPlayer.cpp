@@ -36,6 +36,26 @@ Labeler::VideoPlayer::VideoPlayer(std::string videoPath, const char * winname) :
 		boost::filesystem::create_directory(boost::filesystem::path(L"Animals"));
 }
 
+void Labeler::VideoPlayer::run()
+{
+	int key = 0;
+
+	while ((cv::getWindowProperty(this->_WIN_NAME, CV_WND_PROP_FULLSCREEN) != -1) && !Shutdown)
+	{
+		for (int i = 0; this->isPlaying && this->readImage(); i++)
+			this->showImage();
+
+		if (this->isPlaying)
+			key = cv::waitKey(2);
+		else
+			key = cv::waitKey();
+
+		this->keyAction((char)key);
+	}
+
+	cv::destroyAllWindows();
+}
+
 bool Labeler::VideoPlayer::isVideoEnded() noexcept
 {
 	return cv::getTrackbarPos(_TIMEBAR_NAME, _WIN_NAME) == vidlength;
