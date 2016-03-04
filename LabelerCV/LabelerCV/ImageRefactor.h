@@ -11,7 +11,7 @@ namespace Labeler
 {
 	namespace ImageRefactor
 	{
-		void CopyDir(fs::path inpath, fs::path outpath);
+		void CopyDir(fs::path inpath, fs::path outpath, uint32_t depth = 0);
 
 		void ResizeImages(fs::path path, uint32_t width, uint32_t height)
 		{
@@ -48,24 +48,33 @@ namespace Labeler
 			ResizeImages(outpath, width, height);
 		}
 
-		void CopyDir(fs::path inpath, fs::path outpath)
+		void CopyDir(fs::path inpath, fs::path outpath, uint32_t depth)
 		{
 			fs::path workPath = outpath;
-			workPath.append(inpath.filename().c_str());
 
-			if (fs::exists(inpath) && fs::is_directory(inpath))
+			if (depth != 0)
+				workPath.append(inpath.filename().c_str());
+			if (fs::exists(inpath))
 			{
-				fs::directory_iterator end_iter;
-				fs::create_directories(workPath);
-
-				for (fs::directory_iterator dir_iter = fs::directory_iterator(inpath); dir_iter != end_iter; ++dir_iter)
+				if (fs::is_directory(inpath))
 				{
-					CopyDir(dir_iter->path(), workPath);
+					fs::directory_iterator end_iter;
+					fs::create_directories(workPath);
+
+					for (fs::directory_iterator dir_iter = fs::directory_iterator(inpath); dir_iter != end_iter; ++dir_iter)
+					{
+						CopyDir(dir_iter->path(), workPath, depth + 1);
+						std::wclog << "Current depth: " << depth << " - " << workPath.c_str() << std::endl;
+					}
 				}
-			}
-			else
-			{
-				fs::copy_file(inpath, workPath);
+				else if (!fs::exists(workPath))
+				{
+					fs::copy_file(inpath, workPath);
+				}
+				else
+				{
+					std::wcerr << "The file " << workPath.c_str() << " already exists, override files not supported." << std::endl;
+				}
 			}
 		}
 	};

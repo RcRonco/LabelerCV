@@ -1,0 +1,8 @@
+*.dll
+*.pdb
+LabelerCV/Debug/LabelerCV.ilk
+LabelerCV/LabelerCV.VC.opendb
+*.log
+LabelerCV/LabelerCV/Debug/LabelerCV.tlog/CL.read.1.tlog
+*.obj
+LabelerCV/LabelerCV/Debug/vc140.idb

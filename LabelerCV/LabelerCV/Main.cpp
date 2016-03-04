@@ -11,46 +11,55 @@ void runVideoPlayer(std::string path);
 
 int main(int argc, char** argv)
 {
-	int opt;
-
 	po::variables_map vm;
-	po::options_description desc("Allowed options");
-	desc.add_options()
-		("help,H,h,?", "produce help message")
-		("video,C,c", po::value<std::string>(), "Run video player")
-		("resize,R,r", po::value<std::vector<std::string>>(), "ResizeImages")
-		("dest,D,d", po::value<std::vector<std::string>>(), "Dest")
-		("height,H,h", po::value<uint32_t>(), "New Images height")
-		("width,W,w", po::value<uint32_t>(), "New Images width");
 
-	po::store(po::command_line_parser(argc, argv).options(desc).run(), vm);
-	
-	if (vm.size() < 2 || vm["help,H,h,?"].empty())
+	try
 	{
-		
+
+		po::options_description desc("Allowed options");
+		desc.add_options()
+			("help,?", "produce help message")
+			("video,c", po::value<std::string>(), "Run Dataset video player")
+			("resize,r", po::value<std::string>(), "Resize images, need height and width")
+			("dest,d", po::value<std::string>(), "The destination to the resized images, if not exists the source images will be overrided.")
+			("height,h", po::value<uint32_t>(), "New Images height")
+			("width,w", po::value<uint32_t>(), "New Images width");
+
+		po::store(po::command_line_parser(argc, argv).options(desc).run(), vm);
+
+		if (!vm["help"].empty())
+		{
+			std::cout << desc;
+		}
+		else if (!vm["video"].empty())
+		{
+			runVideoPlayer(vm["video"].as<std::string>());
+		}
+		else if (!vm["resize"].empty())
+		{
+			if (vm["height"].empty() || vm["width"].empty())
+			{
+				std::cout << "For resize must be width and height" << std::endl;
+				return -1;
+			}
+			else if (!vm["dest"].empty())
+			{
+				Labeler::ImageRefactor::ResizeImages(vm["resize"].as<std::string>(), vm["dest"].as<std::string>(), vm["height"].as<uint32_t>(), vm["width"].as<uint32_t>());
+			}
+			else
+			{
+				Labeler::ImageRefactor::ResizeImages(vm["resize"].as<std::string>(), vm["height"].as<uint32_t>(), vm["width"].as<uint32_t>());
+			}
+		}
+
+		return 0;
 	}
-	else if (!vm["video,C,c"].empty())
+	catch (std::exception& e)
 	{
-		runVideoPlayer(vm["video,C,c"].as<std::string>());
+		std::cout << e.what() << std::endl;
+
+		return -1;
 	}
-	else if (!vm["resize,R,r"].empty())
-	{
-		if (!vm["height,H,h"].empty() || !vm["width,W,w"].empty())
-		{
-			std::cout << "For resize must be width and height" << std::endl;
-			return -1;
-		}
-		else if (!vm["dest,D,d"].empty())
-		{
-			Labeler::ImageRefactor::ResizeImages(vm["resize,R,r"].as<std::string>(), vm["dest,D,d"].as<std::string>(), vm["height,H,h"].as<uint32_t>(), vm["width,W,w"].as<uint32_t>());
-		}
-		else
-		{
-			Labeler::ImageRefactor::ResizeImages(vm["resize,R,r"].as<std::string>(), vm["height,H,h"].as<uint32_t>(), vm["width,W,w"].as<uint32_t>());
-		}
-	}
-	
-	return 0;
 }
 
 void runVideoPlayer(std::string path)
