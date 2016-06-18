@@ -1,7 +1,6 @@
 #include "VideoPlayer.h"
 
 #include <ctime>
-#include <fstream>
 #include <sstream>
 #include <boost\filesystem.hpp>
 
@@ -14,7 +13,7 @@ void mouseHandler(int event, int x, int y, int flags, void* param);
 #define LABLER_BACK   0x08
 #define LABLER_ESCAPE 0x1B
 
-Labeler::VideoPlayer::VideoPlayer(std::string videoPath, const char * winname) : _path(videoPath), _WIN_NAME(winname)
+Labeler::VideoPlayer::VideoPlayer(std::string videoPath, const char * winname, std::string outputPath) : _path(videoPath), _WIN_NAME(winname) 
 {
 	if (!loadVideo(videoPath))
 		throw std::exception("Can't load the video");
@@ -22,7 +21,7 @@ Labeler::VideoPlayer::VideoPlayer(std::string videoPath, const char * winname) :
 	cv::namedWindow(_WIN_NAME, cv::WINDOW_KEEPRATIO);
 	cv::createTrackbar(_TIMEBAR_NAME, _WIN_NAME, 0, vidlength, timeTrackbarHandler, reinterpret_cast<void*>(&_capture));
 	cv::setMouseCallback(_WIN_NAME, mouseHandler, this);
-	
+
 	readImage();
 	showImage();
 
@@ -34,6 +33,11 @@ Labeler::VideoPlayer::VideoPlayer(std::string videoPath, const char * winname) :
 		boost::filesystem::create_directory(boost::filesystem::path(L"Cars"));
 	if (!boost::filesystem::exists(boost::filesystem::path(L"Animals")))
 		boost::filesystem::create_directory(boost::filesystem::path(L"Animals"));
+
+	_ofsTrainVal.open(outputPath, std::ios::app);
+	if (!_ofsTrainVal.good()) {
+		throw std::exception("Unable to open trainval output file.");
+	}
 }
 
 void Labeler::VideoPlayer::run()
@@ -208,7 +212,7 @@ void Labeler::VideoPlayer::getbackMat()
 
 void Labeler::VideoPlayer::SaveImage()
 {
-	std::stringstream imgFilename, datafileName, data;
+	/*std::stringstream imgFilename, datafileName, data;
 	imgFilename << "Full\\" << std::to_string(time(0)) << ".jpg";
 	datafileName << "Full\\" << std::to_string(time(0)) << ".dat";
 	data << "Type:x:y:width:height" << std::endl;
@@ -235,7 +239,33 @@ void Labeler::VideoPlayer::SaveImage()
 	if (ofs.is_open())
 		ofs << data.rdbuf();
 
-	ofs.close();
+	ofs.close();*/
+
+	std::stringstream imgFilename, data;
+	imgFilename << "Full\\" << std::to_string(time(0)) << ".jpg";
+	data << "Full\\" << std::to_string(time(0)) << ".jpg;";
+	for (LabeledRect rect : this->_historyRects)
+	{
+		switch (rect.second)
+		{
+			case LabelType::Human:
+				data << 0;
+				break;
+			case LabelType::Car:
+				data << 1;
+				break;
+			case LabelType::Animal:
+				data << 2;
+				break;
+		}
+		data << ":" << rect.first.x << ":" << rect.first.y << ":" << rect.first.width << ":" << rect.first.height << ";";
+	}
+	data << std::endl;
+	cv::imwrite(imgFilename.str(), this->getFrame());
+	if (_ofsTrainVal.is_open()) {
+		_ofsTrainVal << data.rdbuf();
+		_ofsTrainVal.flush();
+	}
 }
 
 bool Labeler::VideoPlayer::loadVideo(std::string VideoPath)

@@ -1,7 +1,7 @@
 #include "ImageRefactor.h"
 #include <opencv.hpp>
 
-void CopyDir(fs::path inpath, fs::path outpath, uint32_t depth)
+void CopyDir(fs::path inpath, fs::path outpath, uint32_t depth = 0)
 {
 	fs::path workPath = outpath;
 

@@ -7,7 +7,7 @@
 
 using namespace Labeler;
 namespace po = boost::program_options;
-void runVideoPlayer(std::string path);
+void runVideoPlayer(std::string path, std::string outputPath);
 
 int main(int argc, char** argv)
 {
@@ -15,15 +15,15 @@ int main(int argc, char** argv)
 
 	try
 	{
-
 		po::options_description desc("Allowed options");
 		desc.add_options()
-			("help,?", "produce help message")
-			("video,c", po::value<std::string>(), "Run Dataset video player")
-			("resize,r", po::value<std::string>(), "Resize images, need height and width")
+			("help,?", "Show help message.")
+			("video,c", po::value<std::string>(), Labeler::szVideoDescription)
+			("output,o", po::value<std::string>(), "Output file for the train data.")
+			("resize,r", po::value<std::string>(), "Resize images, need height and width.")
 			("dest,d", po::value<std::string>(), "The destination to the resized images, if not exists the source images will be overrided.")
-			("height,h", po::value<uint32_t>(), "New Images height")
-			("width,w", po::value<uint32_t>(), "New Images width");
+			("height,h", po::value<uint32_t>(), "New Images height.")
+			("width,w", po::value<uint32_t>(), "New Images width.");
 
 		po::store(po::command_line_parser(argc, argv).options(desc).run(), vm);
 
@@ -33,7 +33,10 @@ int main(int argc, char** argv)
 		}
 		else if (!vm["video"].empty())
 		{
-			runVideoPlayer(vm["video"].as<std::string>());
+			if (!vm["output"].empty())
+				runVideoPlayer(vm["video"].as<std::string>(), vm["output"].as<std::string>());
+			else
+				runVideoPlayer(vm["video"].as<std::string>(), "");
 		}
 		else if (!vm["resize"].empty())
 		{
@@ -62,9 +65,13 @@ int main(int argc, char** argv)
 	}
 }
 
-void runVideoPlayer(std::string path)
+void runVideoPlayer(std::string path, std::string outputPath)
 {
-	const char * window_name = "PoV - Dataset Slicer";
-	auto video = std::make_unique<VideoPlayer>(path, window_name);
+	const char * window_name = "Dataset Slicer";
+	std::unique_ptr<VideoPlayer> video;
+	if (outputPath == "")
+		video = std::make_unique<VideoPlayer>(path, window_name);
+	else
+		video = std::make_unique<VideoPlayer>(path, window_name, outputPath);
 	video->run();
 }
