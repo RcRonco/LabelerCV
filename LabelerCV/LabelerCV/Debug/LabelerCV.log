@@ -1,5 +1,0 @@
-﻿  VideoPlayer.cpp
-i:\roncohen\workspace\main projects\labelercv\labelercv\labelercv\videoplayer.cpp(113): warning C4018: '<=': signed/unsigned mismatch
-i:\roncohen\workspace\main projects\labelercv\labelercv\labelercv\videoplayer.cpp(276): warning C4244: '=': conversion from 'double' to 'uint32_t', possible loss of data
-i:\roncohen\workspace\main projects\labelercv\labelercv\labelercv\videoplayer.cpp(277): warning C4244: '=': conversion from 'double' to 'uint32_t', possible loss of data
-  LabelerCV.vcxproj -> I:\RonCohen\Workspace\Main Projects\LabelerCV\LabelerCV\Debug\LabelerCV.exe
