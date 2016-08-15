@@ -51,8 +51,8 @@ namespace Labeler
 			void pushRect(LabeledRect& rect) noexcept;
 
 			// Access Methods
-			cv::Mat getFrame() noexcept { return _frameBuffer; }
-			cv::Mat getForegroundImage() noexcept { return _foregroundMat; }
+			cv::Mat& getFrame() noexcept { return _frameBuffer; }
+			cv::Mat& getForegroundImage() noexcept { return _foregroundMat; }
 
 			bool isMouseDragging() noexcept { return drag; }
 			void setMouseDragging(bool state) noexcept { drag = state; }
@@ -70,7 +70,7 @@ namespace Labeler
 			const char* getWindowName() const noexcept { return _WIN_NAME; }
 
 		private:
-			bool loadVideo(std::string VideoPath);
+			bool loadVideo(std::string VideoPath = "");
 
 	};
 };

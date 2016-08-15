@@ -5,6 +5,7 @@
 #include <boost/filesystem.hpp>
 
 using namespace Labeler;
+namespace fs = boost::filesystem;
 
 void timeTrackbarHandler(int pos, void* userdata) noexcept;
 void mouseHandler(int event, int x, int y, int flags, void* param);
@@ -18,21 +19,24 @@ Labeler::VideoPlayer::VideoPlayer(std::string videoPath, const char * winname, s
 	if (!loadVideo(videoPath))
 		throw std::runtime_error("Can't load the video");
 
-	cv::namedWindow(_WIN_NAME, cv::WINDOW_KEEPRATIO);
+	cv::namedWindow(_WIN_NAME, CV_WINDOW_KEEPRATIO);
 	cv::createTrackbar(_TIMEBAR_NAME, _WIN_NAME, 0, vidlength, timeTrackbarHandler, reinterpret_cast<void*>(&_capture));
 	cv::setMouseCallback(_WIN_NAME, mouseHandler, this);
 
 	readImage();
 	showImage();
 
-	if (!boost::filesystem::exists(boost::filesystem::path(L"Full")))
+	if (!fs::exists(fs::path(L"Dataset")))
+		fs::create_directory(fs::path(L"Dataset"));
+
+	/*if (!boost::filesystem::exists(boost::filesystem::path(L"Full")))
 		boost::filesystem::create_directory(boost::filesystem::path(L"Full"));
 	if (!boost::filesystem::exists(boost::filesystem::path(L"Humans")))
 		boost::filesystem::create_directory(boost::filesystem::path(L"Humans"));
 	if (!boost::filesystem::exists(boost::filesystem::path(L"Cars")))
 		boost::filesystem::create_directory(boost::filesystem::path(L"Cars"));
 	if (!boost::filesystem::exists(boost::filesystem::path(L"Animals")))
-		boost::filesystem::create_directory(boost::filesystem::path(L"Animals"));
+		boost::filesystem::create_directory(boost::filesystem::path(L"Animals"));*/
 
 	_ofsTrainVal.open(outputPath, std::ios::app);
 	if (!_ofsTrainVal.good()) {
@@ -137,7 +141,7 @@ void Labeler::VideoPlayer::showImage()
 	}
 
 	cv::imshow(_WIN_NAME, _frameBuffer);
-	keyAction(cv::waitKey(show_interval));
+	keyAction((char) cv::waitKey(show_interval));
 
 	if (_frameCounter % (int)fps == 0)
 		cv::setTrackbarPos(_TIMEBAR_NAME, _WIN_NAME, cv::getTrackbarPos(_TIMEBAR_NAME, _WIN_NAME) + 1);
@@ -149,18 +153,18 @@ void Labeler::VideoPlayer::CutImages()
 
 	while (!_historyRects.empty())
 	{
- 		std::stringstream strm;
+ 		std::stringstream strm("Dataset/");
 
 		switch (_historyRects[_historyRects.size() - 1].second)
 		{
 		case LabelType::Human:
-			strm << "Humans/";
+			strm << "Humans_";
 			break;
 		case LabelType::Car:
-			strm << "Cars/";
+			strm << "Cars_";
 			break;
 		case LabelType::Animal:
-			strm << "Animals/";
+			strm << "Animals_";
 			break;
 		}
 
@@ -172,7 +176,7 @@ void Labeler::VideoPlayer::CutImages()
 			std::cout << strm.str().c_str() << std::endl;
 
 			if (!cv::imwrite(strm.str(), img))
-				throw std::runtime_error("Unable to save the picture");
+				throw std::runtime_error("Unable to save the pictures");
 			_historyRects.pop_back();
 		}
 	}
@@ -213,8 +217,9 @@ void Labeler::VideoPlayer::getbackMat()
 void Labeler::VideoPlayer::SaveImage()
 {
 	std::stringstream imgFilename, data;
-	imgFilename << "Full/" << std::to_string(time(0)) << ".jpg";
-	data << "Full/" << std::to_string(time(0)) << ".jpg;";
+    std::string ctime = std::to_string((long)time(0));
+	imgFilename << "Dataset/" << ctime.c_str() << ".jpg";
+	data << "Dataset/" << ctime.c_str() << ".jpg;";
 	for (LabeledRect rect : this->_historyRects)
 	{
 		switch (rect.second)
@@ -241,11 +246,13 @@ void Labeler::VideoPlayer::SaveImage()
 
 bool Labeler::VideoPlayer::loadVideo(std::string VideoPath)
 {
-	_capture = cv::VideoCapture(_path);
+    if (VideoPath != "")
+        _path = VideoPath;
+    _capture = cv::VideoCapture(_path);
 	if (_capture.isOpened())
 	{
-		fps = _capture.get(cv::CAP_PROP_FPS);
-		frame_count = _capture.get(cv::CAP_PROP_FRAME_COUNT);
+		fps = (uint32_t) _capture.get(CV_CAP_PROP_FPS);
+		frame_count = (uint32_t) _capture.get(CV_CAP_PROP_FRAME_COUNT);
 		vidlength = frame_count / fps;
 		show_interval = 1000 / fps;
 
@@ -258,7 +265,7 @@ bool Labeler::VideoPlayer::loadVideo(std::string VideoPath)
 void timeTrackbarHandler(int pos, void* userdata) noexcept
 {
 	cv::VideoCapture* vid = reinterpret_cast<cv::VideoCapture*>(userdata);
-	vid->set(cv::CAP_PROP_POS_MSEC, pos * 1000);
+	vid->set(CV_CAP_PROP_POS_MSEC, pos * 1000);
 }
 
 void mouseHandler(int event, int x, int y, int flags, void* param)

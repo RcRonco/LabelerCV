@@ -20,10 +20,6 @@ int main(int argc, const char** argv)
                 ("help,?", "Show help message.")
                 ("video,v", po::value<std::string>(), Labeler::szVideoDescription)
                 ("output,o", po::value<std::string>(), "Output file for the train data.");
-                /*("resize,r", po::value<std::string>(), "Resize images, need height and width.")
-                ("dest,d", po::value<std::string>(), "The destination to the resized images, if not exists the source images will be overrided.")
-                ("height,h", po::value<uint32_t>(), "New Images height.")
-                ("width,w", po::value<uint32_t>(), "New Images width.");*/
 
         po::store(po::command_line_parser(argc, argv).options(desc).run(), vm);
 
@@ -38,22 +34,6 @@ int main(int argc, const char** argv)
             else
                 runVideoPlayer(vm["video"].as<std::string>(), "");
         }
-    /*    else if (!vm["resize"].empty())
-        {
-            if (vm["height"].empty() || vm["width"].empty())
-            {
-                std::cout << "For resize must be width and height" << std::endl;
-                return -1;
-            }
-            else if (!vm["dest"].empty())
-            {
-              //  Labeler::ImageRefactor::ResizeImages(vm["resize"].as<std::string>(), vm["dest"].as<std::string>(), vm["height"].as<uint32_t>(), vm["width"].as<uint32_t>());
-            }
-            else
-            {
-            //    Labeler::ImageRefactor::ResizeImages(vm["resize"].as<std::string>(), vm["height"].as<uint32_t>(), vm["width"].as<uint32_t>());
-            }
-        }*/
 
         return 0;
     }
