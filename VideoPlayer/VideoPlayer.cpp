@@ -4,7 +4,8 @@
 #include <sstream>
 #include <boost/filesystem.hpp>
 
-using namespace Labeler;
+using namespace RCO;
+using namespace RCO::Labeler;
 namespace fs = boost::filesystem;
 
 void timeTrackbarHandler(int pos, void* userdata) noexcept;
@@ -14,13 +15,13 @@ void mouseHandler(int event, int x, int y, int flags, void* param);
 #define LABLER_BACK   0x08
 #define LABLER_ESCAPE 0x1B
 
-Labeler::VideoPlayer::VideoPlayer(std::string videoPath, const char * winname, std::string outputPath) : _path(videoPath), _WIN_NAME(winname) 
+Labeler::VideoPlayer::VideoPlayer(std::string videoPath, const char * winname, std::string outputPath) : _path(videoPath), _WIN_NAME(winname)
 {
 	if (!loadVideo(videoPath))
 		throw std::runtime_error("Can't load the video");
 
 	cv::namedWindow(_WIN_NAME, CV_WINDOW_KEEPRATIO);
-	cv::createTrackbar(_TIMEBAR_NAME, _WIN_NAME, 0, vidlength, timeTrackbarHandler, reinterpret_cast<void*>(&_capture));
+	cv::createTrackbar(_TIMEBAR_NAME, _WIN_NAME, 0, _vidlength, timeTrackbarHandler, reinterpret_cast<void*>(&_capture));
 	cv::setMouseCallback(_WIN_NAME, mouseHandler, this);
 
 	readImage();
@@ -28,15 +29,6 @@ Labeler::VideoPlayer::VideoPlayer(std::string videoPath, const char * winname, s
 
 	if (!fs::exists(fs::path(L"Dataset")))
 		fs::create_directory(fs::path(L"Dataset"));
-
-	/*if (!boost::filesystem::exists(boost::filesystem::path(L"Full")))
-		boost::filesystem::create_directory(boost::filesystem::path(L"Full"));
-	if (!boost::filesystem::exists(boost::filesystem::path(L"Humans")))
-		boost::filesystem::create_directory(boost::filesystem::path(L"Humans"));
-	if (!boost::filesystem::exists(boost::filesystem::path(L"Cars")))
-		boost::filesystem::create_directory(boost::filesystem::path(L"Cars"));
-	if (!boost::filesystem::exists(boost::filesystem::path(L"Animals")))
-		boost::filesystem::create_directory(boost::filesystem::path(L"Animals"));*/
 
 	_ofsTrainVal.open(outputPath, std::ios::app);
 	if (!_ofsTrainVal.good()) {
@@ -50,11 +42,11 @@ void Labeler::VideoPlayer::run()
 
 	while ((cv::getWindowProperty(this->_WIN_NAME, CV_WND_PROP_FULLSCREEN) != -1) && !Shutdown)
 	{
-		for (int i = 0; this->isPlaying && this->readImage(); i++)
+		for (int i = 0; !this->isVideoEnded() && this->isPlaying() && this->readImage(); i++)
 			this->showImage();
 
-		if (this->isPlaying)
-			key = cv::waitKey(2);
+		if (this->isPlaying())
+			key = cv::waitKey();
 		else
 			key = cv::waitKey();
 
@@ -66,17 +58,12 @@ void Labeler::VideoPlayer::run()
 
 bool Labeler::VideoPlayer::isVideoEnded() noexcept
 {
-	return cv::getTrackbarPos(_TIMEBAR_NAME, _WIN_NAME) == vidlength;
+	return cv::getTrackbarPos(_TIMEBAR_NAME, _WIN_NAME) == _vidlength;
 }
 
 void  Labeler::VideoPlayer::keyAction(char key)
 {
-	if (key == LABLER_SPACE)
-	{
-		CutImages();
-		isPlaying = !isPlaying;
-	}
-	else if (key == '1' || key == 'T' || key == 't')
+	if (key == '1' || key == 'T' || key == 't')
 	{
 		setLabel(Labeler::LabelType::Human);
 	}
@@ -95,14 +82,17 @@ void  Labeler::VideoPlayer::keyAction(char key)
 	else if (key == LABLER_ESCAPE)
 	{
 		cv::destroyAllWindows();
-		exit(0);
+		_exit(0);
 	}
-	else if (key == 'S' || key == 's')
+	else if (key == LABLER_SPACE || key == 'S' || key == 's')
 	{
-		if (!this->isPlaying)
+
+		if (this->isPlaying())
+			this->_playing = false;
+		else
 		{
 			SaveImage();
-			this->isPlaying = true;
+			this->_playing = true;
 		}
 	}
 }
@@ -114,7 +104,7 @@ void Labeler::VideoPlayer::pushRect(LabeledRect & rect) noexcept
 
 void Labeler::VideoPlayer::changeTime(int seconds) noexcept
 {
-	if (seconds > 0 && seconds <= this->vidlength)
+	if (seconds > 0 && seconds <= this->_vidlength)
 		cv::setTrackbarPos(_TIMEBAR_NAME, _WIN_NAME, seconds);
 }
 
@@ -122,7 +112,7 @@ bool Labeler::VideoPlayer::readImage() noexcept
 {
 	if (!_capture.read(_frameBuffer))
 	{
-		isPlaying = false;
+		_playing = false;
 		return false;
 	}
 
@@ -132,7 +122,7 @@ bool Labeler::VideoPlayer::readImage() noexcept
 	return true;
 }
 
-void Labeler::VideoPlayer::showImage() 
+void Labeler::VideoPlayer::showImage()
 {
 	if (cv::getWindowProperty(_WIN_NAME, CV_WND_PROP_FULLSCREEN) == -1)
 	{
@@ -141,48 +131,13 @@ void Labeler::VideoPlayer::showImage()
 	}
 
 	cv::imshow(_WIN_NAME, _frameBuffer);
-	keyAction((char) cv::waitKey(show_interval));
+	keyAction((char) cv::waitKey(_show_interval));
 
-	if (_frameCounter % (int)fps == 0)
-		cv::setTrackbarPos(_TIMEBAR_NAME, _WIN_NAME, cv::getTrackbarPos(_TIMEBAR_NAME, _WIN_NAME) + 1);
-}
+	if (_frameCounter % (int)_fps == 0) {
 
-void Labeler::VideoPlayer::CutImages()
-{
-	uint32_t imgCounter = 0;
-
-	while (!_historyRects.empty())
-	{
- 		std::stringstream strm("Dataset/");
-
-		switch (_historyRects[_historyRects.size() - 1].second)
-		{
-		case LabelType::Human:
-			strm << "Humans_";
-			break;
-		case LabelType::Car:
-			strm << "Cars_";
-			break;
-		case LabelType::Animal:
-			strm << "Animals_";
-			break;
-		}
-
-		cv::Mat img = getFrame()(_historyRects[_historyRects.size() - 1].first);
-		if (img.data)
-		{
-			imgCounter++;
-			strm << std::to_string(time(0)) << "_" << std::to_string(imgCounter) << ".png";
-			std::cout << strm.str().c_str() << std::endl;
-
-			if (!cv::imwrite(strm.str(), img))
-				throw std::runtime_error("Unable to save the pictures");
-			_historyRects.pop_back();
-		}
+	    int time = cv::getTrackbarPos(_TIMEBAR_NAME, _WIN_NAME) + 1;
+	     cv::setTrackbarPos(_TIMEBAR_NAME, _WIN_NAME, time );
 	}
-
-	std::vector<LabeledRect> empt;
-	std::swap(_historyRects, empt);
 }
 
 void Labeler::VideoPlayer::getbackMat()
@@ -197,15 +152,15 @@ void Labeler::VideoPlayer::getbackMat()
 			cv::Scalar color;
 			switch (rect.second)
 			{
-			case LabelType::Human:
-				color = Labeler::RED;
-				break;
-			case LabelType::Car:
-				color = Labeler::BLUE;
-				break;
-			case LabelType::Animal:
-				color = Labeler::GREEN;
-				break;
+				case LabelType::Human:
+					color = Labeler::RED;
+					break;
+				case LabelType::Car:
+					color = Labeler::BLUE;
+					break;
+				case LabelType::Animal:
+					color = Labeler::GREEN;
+					break;
 			}
 			cv::rectangle(_foregroundMat, rect.first, color, 1);
 		}
@@ -217,7 +172,7 @@ void Labeler::VideoPlayer::getbackMat()
 void Labeler::VideoPlayer::SaveImage()
 {
 	std::stringstream imgFilename, data;
-    std::string ctime = std::to_string((long)time(0));
+	std::string ctime = std::to_string((long)time(0));
 	imgFilename << "Dataset/" << ctime.c_str() << ".jpg";
 	data << "Dataset/" << ctime.c_str() << ".jpg;";
 	for (LabeledRect rect : this->_historyRects)
@@ -246,15 +201,15 @@ void Labeler::VideoPlayer::SaveImage()
 
 bool Labeler::VideoPlayer::loadVideo(std::string VideoPath)
 {
-    if (VideoPath != "")
-        _path = VideoPath;
-    _capture = cv::VideoCapture(_path);
+	if (VideoPath != "")
+		_path = VideoPath;
+	_capture = cv::VideoCapture(_path);
 	if (_capture.isOpened())
 	{
-		fps = (uint32_t) _capture.get(CV_CAP_PROP_FPS);
-		frame_count = (uint32_t) _capture.get(CV_CAP_PROP_FRAME_COUNT);
-		vidlength = frame_count / fps;
-		show_interval = 1000 / fps;
+		_fps = (uint32_t) _capture.get(CV_CAP_PROP_FPS);
+		_frame_count = (uint32_t) _capture.get(CV_CAP_PROP_FRAME_COUNT);
+		_vidlength = _frame_count / _fps;
+		_show_interval = 1000 / _fps;
 
 		return true;
 	}
@@ -271,9 +226,8 @@ void timeTrackbarHandler(int pos, void* userdata) noexcept
 void mouseHandler(int event, int x, int y, int flags, void* param)
 {
 	VideoPlayer* videoPlayer = (VideoPlayer*)param;
-	if (!videoPlayer->isPlaying)
+	if (!videoPlayer->isPlaying())
 	{
-
 		if (event == CV_EVENT_LBUTTONDOWN && !videoPlayer->isMouseDragging())
 		{
 			/* left button clicked. ROI selection begins */
@@ -289,15 +243,15 @@ void mouseHandler(int event, int x, int y, int flags, void* param)
 			cv::Scalar color;
 			switch (videoPlayer->getLabel())
 			{
-			case LabelType::Human:
-				color = Labeler::RED;
-				break;
-			case LabelType::Car:
-				color = Labeler::BLUE;
-				break;
-			case LabelType::Animal:
-				color = Labeler::GREEN;
-				break;
+				case LabelType::Human:
+					color = Labeler::RED;
+					break;
+				case LabelType::Car:
+					color = Labeler::BLUE;
+					break;
+				case LabelType::Animal:
+					color = Labeler::GREEN;
+					break;
 			}
 
 			cv::rectangle(img1, videoPlayer->getPoint1(), videoPlayer->getPoint2(), color, 1, 8, 0);
@@ -312,15 +266,15 @@ void mouseHandler(int event, int x, int y, int flags, void* param)
 			cv::Scalar color;
 			switch (videoPlayer->getLabel())
 			{
-			case LabelType::Human:
-				color = Labeler::RED;
-				break;
-			case LabelType::Car:
-				color = Labeler::BLUE;
-				break;
-			case LabelType::Animal:
-				color = Labeler::GREEN;
-				break;
+                case LabelType::Human:
+					color = Labeler::RED;
+					break;
+				case LabelType::Car:
+					color = Labeler::BLUE;
+					break;
+				case LabelType::Animal:
+					color = Labeler::GREEN;
+					break;
 			}
 
 			cv::Mat frm = videoPlayer->getForegroundImage();
